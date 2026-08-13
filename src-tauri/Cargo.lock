@@ -2976,19 +2976,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "pomodoro-app"
-version = "0.1.0"
-dependencies = [
- "active-win-pos-rs",
- "chrono",
- "serde",
- "serde_json",
- "tauri",
- "tauri-build",
- "tauri-plugin-opener",
-]
-
-[[package]]
 name = "portable-atomic"
 version = "1.15.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5384,6 +5371,19 @@ dependencies = [
  "quote",
  "syn 2.0.119",
  "synstructure",
+]
+
+[[package]]
+name = "youtimeflow"
+version = "0.1.0"
+dependencies = [
+ "active-win-pos-rs",
+ "chrono",
+ "serde",
+ "serde_json",
+ "tauri",
+ "tauri-build",
+ "tauri-plugin-opener",
 ]
 
 [[package]]
