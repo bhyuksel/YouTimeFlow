@@ -284,10 +284,17 @@ button:active {
   box-shadow: none;
 }
 
-.close-btn {
+.window-controls {
   position: absolute;
   top: 10px;
   right: 15px;
+  display: flex;
+  gap: 15px;
+  z-index: 10;
+  -webkit-app-region: no-drag;
+}
+
+.window-controls button {
   background: transparent;
   border: none;
   font-size: 1rem;
@@ -295,14 +302,26 @@ button:active {
   opacity: 0.3;
   cursor: pointer;
   transition: all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
-  z-index: 10;
-  -webkit-app-region: no-drag;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: none;
 }
 
-.close-btn:hover {
+.window-controls button:hover {
   opacity: 1;
   transform: scale(1.1);
+  background: transparent;
+  box-shadow: none;
+}
+
+.window-controls .close-btn:hover {
   color: #ef4444;
+}
+
+.window-controls .minimize-btn:hover {
+  color: var(--primary);
 }
 
 .view-toggle-btn {

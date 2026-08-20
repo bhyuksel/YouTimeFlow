@@ -512,7 +512,16 @@ function App() {
         </button>
       )}
 
-      <button className="close-btn" onClick={() => appWindow.hide()} title="Gizle (Tepsiye)">✕</button>
+      {isMenuOpen && (
+        <div className="window-controls">
+          <button className="minimize-btn" onClick={() => appWindow.hide()} title="Gizle (Tepsiye)">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+          </button>
+          <button className="close-btn" onClick={() => { setIsMenuOpen(false); handleMouseLeave(true); }} title="Menüyü Kapat">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+          </button>
+        </div>
+      )}
 
       <div className="content">
         {!isMenuOpen ? (
