@@ -432,9 +432,10 @@ function App() {
       setTimeLeft(mode === "work" ? workTimeSetting : breakTimeSetting);
     }
     
-    await changeWindowSize(300, 150);
-    
-    await changeWindowSize(300, 150);
+    if (document.activeElement instanceof HTMLElement) {
+      document.activeElement.blur();
+    }
+    await changeWindowSize(300, 180);
     
     setIsMenuOpen(false);
     setEditingPresetId(null);
@@ -450,9 +451,10 @@ function App() {
     setThemeColor(localStorage.getItem("themeColor") || "#3b82f6");
     setAlarmType(localStorage.getItem("alarmType") || "chime");
     
-    await changeWindowSize(300, 150);
-    
-    await changeWindowSize(300, 150);
+    if (document.activeElement instanceof HTMLElement) {
+      document.activeElement.blur();
+    }
+    await changeWindowSize(300, 180);
     
     setIsMenuOpen(false);
     setEditingPresetId(null);
@@ -484,18 +486,38 @@ function App() {
   const hasHours = (mode === "work" ? workTimeSetting : breakTimeSetting) >= 3600;
   const timeStr = formatTime(timeLeft, hasHours);
 
+  const getPositionStyles = (): React.CSSProperties => {
+    const styles: React.CSSProperties = { position: 'absolute' };
+    if (anchorPosition === "center center") {
+      styles.inset = 0;
+      styles.margin = "auto";
+      return styles;
+    }
+    if (anchorPosition.includes("top")) styles.top = 0;
+    if (anchorPosition.includes("bottom")) styles.bottom = 0;
+    if (anchorPosition.includes("left")) styles.left = 0;
+    if (anchorPosition.includes("right")) styles.right = 0;
+    if (anchorPosition === "top center" || anchorPosition === "bottom center") {
+      styles.left = 0;
+      styles.right = 0;
+      styles.margin = "0 auto";
+    }
+    return styles;
+  };
+
   return (
     <div 
       className={`app-container ${isHovered || isMenuOpen ? "hovered" : "minimized"} ${isMenuOpen ? "menu-open" : ""} ${mode} ${isTeleporting ? "teleporting" : ""}`}
       onMouseEnter={handleMouseEnter}
-        onMouseLeave={() => handleMouseLeave()}
-        style={{
-          '--minimized-opacity': minOpacitySetting,
-          '--minimized-scale': minScaleSetting,
-          '--primary': themeColor,
-          '--anchor-origin': anchorPosition
-        } as React.CSSProperties}
-      >
+      onMouseLeave={() => handleMouseLeave()}
+      style={{
+        '--minimized-opacity': minOpacitySetting,
+        '--minimized-scale': minScaleSetting,
+        '--primary': themeColor,
+        '--anchor-origin': anchorPosition,
+        ...getPositionStyles()
+      } as React.CSSProperties}
+    >
         <audio ref={audioRef} preload="auto" />
 
       <div className="drag-region" data-tauri-drag-region>
@@ -512,16 +534,16 @@ function App() {
         </button>
       )}
 
-      {isMenuOpen && (
-        <div className="window-controls">
-          <button className="minimize-btn" onClick={() => appWindow.hide()} title="Gizle (Tepsiye)">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-          </button>
-          <button className="close-btn" onClick={() => { setIsMenuOpen(false); handleMouseLeave(true); }} title="Menüyü Kapat">
+      <div className="window-controls">
+        <button className="minimize-btn" onClick={() => appWindow.hide()} title="Gizle (Tepsiye)">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+        </button>
+        {isMenuOpen && (
+          <button className="close-btn" onClick={cancelSettings} title="Menüyü Kapat">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
           </button>
-        </div>
-      )}
+        )}
+      </div>
 
       <div className="content">
         {!isMenuOpen ? (
@@ -629,54 +651,82 @@ function App() {
                     <div className="setting-group">
                       <div className="setting-group-title">Görünüm & Davranış</div>
                       
-                      <div className="live-preview-box">
-                         <p className="preview-title">Küçülme & Saydamlık Önizlemesi</p>
-                         <div className="preview-canvas">
-                            <div className="preview-dummy" style={{
-                               transform: `scale(${minScaleSetting})`,
-                               opacity: minOpacitySetting,
-                               boxShadow: `0 0 10px ${themeColor}40`,
-                               transformOrigin: anchorPosition
-                            }}>
-                               <div className="preview-dummy-text" style={{ color: themeColor, textShadow: `0 0 10px ${themeColor}`}}>
-                                  25:00
-                               </div>
+                      <div className="preview-canvas">
+                          <div 
+                            className="app-container minimized preview-replica"
+                            style={{
+                              '--minimized-opacity': minOpacitySetting,
+                              '--minimized-scale': minScaleSetting,
+                              '--primary': themeColor,
+                              '--anchor-origin': 'center center',
+                              margin: '0 auto',
+                              position: 'relative'
+                            } as React.CSSProperties}
+                          >
+                            <div className="content">
+                              <div className="timer-display">
+                                <h1 className={`glow-text ${hasHours ? 'long-text' : ''}`}>{timeStr}</h1>
+                              </div>
                             </div>
-                         </div>
+                          </div>
                       </div>
 
-                      <div className="setting-row">
-                        <label>Tema Rengi:</label>
-                        <input type="color" value={themeColor} onChange={(e) => setThemeColor(e.target.value)} />
-                      </div>
-                      <div className="setting-row">
-                        <label>Gizlenme Gecikmesi (sn):</label>
-                        <input type="number" min="1" max="60" value={hoverDelaySetting} onChange={(e) => setHoverDelaySetting(Number(e.target.value))} />
+                      <div className="modern-settings-grid">
+                        <div className="modern-setting-card">
+                          <label>Tema Rengi</label>
+                          <div className="color-picker-wrapper">
+                            <input type="color" value={themeColor} onChange={(e) => setThemeColor(e.target.value)} />
+                            <div className="color-display" style={{backgroundColor: themeColor}}></div>
+                            <span>{themeColor.toUpperCase()}</span>
+                          </div>
+                        </div>
+
+                        <div className="modern-setting-card">
+                          <label>Gizlenme Süresi</label>
+                          <div className="number-input-modern">
+                            <input type="number" min="1" max="60" value={hoverDelaySetting} onChange={(e) => setHoverDelaySetting(Number(e.target.value))} />
+                            <span>sn</span>
+                          </div>
+                        </div>
                       </div>
                       
-                      <div className="setting-grid-2">
-                        <div className="setting-row vertical">
-                          <label>Saydamlık:</label>
-                          <input type="range" min="0.1" max="1" step="0.1" value={minOpacitySetting} onChange={(e) => setMinOpacitySetting(Number(e.target.value))} />
+                      <div className="modern-sliders-section">
+                        <div className="modern-slider-row">
+                          <div className="slider-label">
+                            <span>Saydamlık</span>
+                            <span>{Math.round(minOpacitySetting * 100)}%</span>
+                          </div>
+                          <input type="range" className="styled-slider" min="0.1" max="1" step="0.1" value={minOpacitySetting} onChange={(e) => setMinOpacitySetting(Number(e.target.value))} style={{ '--slider-color': themeColor } as React.CSSProperties} />
                         </div>
-                        <div className="setting-row vertical">
-                          <label>Küçülme Oranı:</label>
-                          <input type="range" min="0.3" max="1" step="0.1" value={minScaleSetting} onChange={(e) => setMinScaleSetting(Number(e.target.value))} />
+                        
+                        <div className="modern-slider-row">
+                          <div className="slider-label">
+                            <span>Küçülme Oranı</span>
+                            <span>{Math.round(minScaleSetting * 100)}%</span>
+                          </div>
+                          <input type="range" className="styled-slider" min="0.3" max="1" step="0.1" value={minScaleSetting} onChange={(e) => setMinScaleSetting(Number(e.target.value))} style={{ '--slider-color': themeColor } as React.CSSProperties} />
                         </div>
                       </div>
 
-                      <div className="setting-row">
-                        <label>Küçülme Yönü:</label>
-                        <div className="alarm-select-wrapper">
-                          <select value={anchorPosition} onChange={(e) => setAnchorPosition(e.target.value)}>
-                            <option value="center center">Merkez</option>
-                            <option value="top left">Sol Üst</option>
-                            <option value="top center">Üst Orta</option>
-                            <option value="top right">Sağ Üst</option>
-                            <option value="bottom left">Sol Alt</option>
-                            <option value="bottom center">Alt Orta</option>
-                            <option value="bottom right">Sağ Alt</option>
-                          </select>
+                      <div className="modern-anchor-section">
+                        <label>Küçülme Yönü (Ekran Köşesi)</label>
+                        <div className="anchor-grid-modern">
+                          {[
+                            {val: "top left", label: "↖"}, {val: "top center", label: "↑"}, {val: "top right", label: "↗"},
+                            {val: "center left", label: "←"}, {val: "center center", label: "•"}, {val: "center right", label: "→"},
+                            {val: "bottom left", label: "↙"}, {val: "bottom center", label: "↓"}, {val: "bottom right", label: "↘"}
+                          ].map(pos => (
+                            <button 
+                              key={pos.val} 
+                              type="button" 
+                              className={`anchor-btn ${anchorPosition === pos.val || (pos.val === 'center center' && !anchorPosition.includes('top') && !anchorPosition.includes('bottom') && !anchorPosition.includes('left') && !anchorPosition.includes('right')) ? 'active' : ''}`}
+                              onClick={() => setAnchorPosition(pos.val)}
+                              style={anchorPosition === pos.val || (pos.val === 'center center' && anchorPosition === 'center center') ? { backgroundColor: themeColor, borderColor: themeColor, boxShadow: `0 0 10px ${themeColor}60` } : {}}
+                              title={pos.val}
+                            >
+                              {pos.label}
+                            </button>
+                          ))}
                         </div>
                       </div>
                     </div>
@@ -710,7 +760,7 @@ function App() {
                   </div>
 
                   <div className="settings-controls">
-                    <button type="button" className="cancel-btn" onClick={cancelSettings}>İptal / Kapat</button>
+                    <button type="button" className="cancel-btn" onClick={cancelSettings}>İptal</button>
                     <button type="submit" className="save-btn">Kaydet</button>
                   </div>
                 </form>

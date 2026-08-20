@@ -51,6 +51,7 @@ html, body, #root {
   border: 1px solid var(--glass-border);
   box-shadow: 0 10px 40px 0 var(--glass-shadow);
   border-radius: 24px;
+  clip-path: inset(0 round 24px);
   
   width: 100%;
   height: 100%;
@@ -59,7 +60,12 @@ html, body, #root {
   flex-direction: column;
   position: relative;
   
-  transition: opacity 0.5s ease-in-out, transform 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
+  transition: width 0.4s cubic-bezier(0.2, 0.8, 0.2, 1), 
+              height 0.4s cubic-bezier(0.2, 0.8, 0.2, 1), 
+              background 0.3s ease, 
+              backdrop-filter 0.3s ease, 
+              transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1), 
+              opacity 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
   transform-origin: var(--anchor-origin, center center);
   overflow: hidden;
 }
@@ -85,9 +91,12 @@ html, body, #root {
 
 /* Minimized State */
 .app-container.minimized {
+  width: 250px;
+  height: 120px;
   opacity: var(--minimized-opacity, 0.6);
   transform: scale(var(--minimized-scale, 0.6));
   border-radius: 36px;
+  clip-path: inset(0 round 36px);
 }
 
 /* Settings Open State */
@@ -116,6 +125,11 @@ html, body, #root {
   max-height: 0;
   margin: 0;
   opacity: 0;
+}
+
+.app-container.minimized .window-controls {
+  opacity: 0;
+  pointer-events: none;
 }
 
 .app-container.minimized .timer-display {
@@ -290,7 +304,7 @@ button:active {
   right: 15px;
   display: flex;
   gap: 15px;
-  z-index: 10;
+  z-index: 9999;
   -webkit-app-region: no-drag;
 }
 
@@ -307,6 +321,7 @@ button:active {
   align-items: center;
   justify-content: center;
   box-shadow: none;
+  -webkit-app-region: no-drag !important;
 }
 
 .window-controls button:hover {
@@ -314,6 +329,10 @@ button:active {
   transform: scale(1.1);
   background: transparent;
   box-shadow: none;
+}
+
+.window-controls button svg {
+  pointer-events: none;
 }
 
 .window-controls .close-btn:hover {
@@ -595,17 +614,9 @@ button:active {
   letter-spacing: 1px;
 }
 
-.preview-canvas {
-  width: 120px;
-  height: 60px;
-  background: var(--bg-color);
-  border-radius: 12px;
-  border: 1px solid var(--glass-border);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  position: relative;
-  overflow: hidden;
+
+.preview-replica {
+  pointer-events: none;
 }
 
 .preview-dummy {
@@ -789,13 +800,13 @@ button:active {
 .menu-tab.active {
   opacity: 1;
   background: rgba(255, 255, 255, 0.12);
-  color: var(--theme-color, #3b82f6);
+  color: var(--primary, #3b82f6);
   box-shadow: 0 2px 10px rgba(0,0,0,0.1);
 }
 
 .menu-tab.active svg {
   opacity: 1;
-  color: var(--theme-color, #3b82f6);
+  color: var(--primary, #3b82f6);
 }
 
 .menu-content-area {
@@ -831,3 +842,222 @@ button:active {
   flex-direction: column;
 }
 
+
+/* Modern Settings UI */
+.live-preview-box.modern {
+  background: transparent;
+  border: none;
+  border-radius: 16px;
+  padding: 16px;
+  margin-bottom: 24px;
+}
+
+
+.preview-grid-bg {
+  position: absolute;
+  inset: 0;
+  background-image: 
+    linear-gradient(to right, rgba(255,255,255,0.05) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255,255,255,0.05) 1px, transparent 1px);
+  background-size: 20px 20px;
+  opacity: 0.5;
+}
+
+.preview-hint {
+  text-align: center;
+  font-size: 0.75rem;
+  color: rgba(255,255,255,0.5);
+  margin: 12px 0 0 0;
+  letter-spacing: 0.5px;
+}
+
+.modern-settings-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.modern-setting-card {
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 12px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.modern-setting-card label {
+  font-size: 0.8rem;
+  color: rgba(255,255,255,0.7);
+  font-weight: 500;
+}
+
+.color-picker-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  position: relative;
+}
+
+.color-picker-wrapper input[type="color"] {
+  position: absolute;
+  opacity: 0;
+  width: 100%;
+  height: 100%;
+  cursor: pointer;
+}
+
+.color-display {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: 2px solid rgba(255,255,255,0.2);
+}
+
+.color-picker-wrapper span {
+  font-family: monospace;
+  font-size: 0.9rem;
+  color: rgba(255,255,255,0.9);
+}
+
+.number-input-modern {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(0,0,0,0.2);
+  padding: 6px 12px;
+  border-radius: 8px;
+  border: 1px solid rgba(255,255,255,0.1);
+}
+
+.number-input-modern input {
+  background: transparent;
+  border: none;
+  color: white;
+  font-size: 1rem;
+  font-weight: 600;
+  width: 40px;
+  outline: none;
+  text-align: center;
+}
+
+.number-input-modern span {
+  font-size: 0.8rem;
+  color: rgba(255,255,255,0.5);
+}
+
+.modern-sliders-section {
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 12px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  margin-bottom: 24px;
+}
+
+.modern-slider-row {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.slider-label {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.85rem;
+  color: rgba(255,255,255,0.8);
+  font-weight: 500;
+}
+
+.styled-slider {
+  -webkit-appearance: none;
+  width: 100%;
+  height: 6px;
+  background: rgba(255,255,255,0.1);
+  border-radius: 3px;
+  outline: none;
+}
+
+.styled-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #fff;
+  cursor: pointer;
+  box-shadow: 0 0 10px var(--slider-color, #fff);
+  border: 2px solid var(--slider-color, #fff);
+}
+
+.modern-anchor-section {
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 12px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+
+.modern-anchor-section label {
+  font-size: 0.85rem;
+  color: rgba(255,255,255,0.8);
+  font-weight: 500;
+}
+
+.anchor-grid-modern {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  width: fit-content;
+}
+
+.anchor-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.1);
+  color: rgba(255,255,255,0.6);
+  font-size: 1.2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.anchor-btn:hover {
+  background: rgba(255,255,255,0.1);
+  color: white;
+}
+
+.anchor-btn.active {
+  color: white;
+  border-color: transparent;
+}
+
+.preview-canvas {
+  width: 100%;
+  height: 140px;
+  background: transparent;
+  position: relative;
+  overflow: visible;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Hide icons when minimized (but keep them in preview) */
+.app-container.minimized:not(.preview-replica) .view-toggle-btn,
+.app-container.minimized:not(.preview-replica) .menu-btn {
+  opacity: 0 !important;
+  pointer-events: none;
+}
