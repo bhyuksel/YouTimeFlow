@@ -684,7 +684,25 @@ function App() {
                         <div className="modern-setting-card">
                           <label>Gizlenme Süresi</label>
                           <div className="number-input-modern">
-                            <input type="number" min="1" max="60" value={hoverDelaySetting} onChange={(e) => setHoverDelaySetting(Number(e.target.value))} />
+                            <input 
+                              type="text" 
+                              inputMode="numeric"
+                              pattern="[0-9]*"
+                              value={hoverDelaySetting === 0 ? '' : hoverDelaySetting} 
+                              onChange={(e) => {
+                                const val = e.target.value.replace(/[^0-9]/g, '');
+                                if (val === '') {
+                                  setHoverDelaySetting(0);
+                                  return;
+                                }
+                                let num = parseInt(val, 10);
+                                if (num > 10) num = 10;
+                                setHoverDelaySetting(num);
+                              }}
+                              onBlur={() => {
+                                if (hoverDelaySetting < 1) setHoverDelaySetting(1);
+                              }}
+                            />
                             <span>sn</span>
                           </div>
                         </div>

@@ -42,20 +42,103 @@
   color: var(--text-color);
 }
 
+.analytics-header-controls {
+  padding: 16px 20px 0;
+  display: flex;
+  justify-content: center;
+}
+
+.time-range-selector {
+  display: flex;
+  background: rgba(0,0,0,0.2);
+  border-radius: 12px;
+  padding: 4px;
+  border: 1px solid rgba(255,255,255,0.05);
+}
+
+.time-range-selector button {
+  background: transparent;
+  border: none;
+  color: var(--text-color);
+  opacity: 0.6;
+  padding: 6px 16px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.time-range-selector button:hover {
+  opacity: 1;
+}
+
+.time-range-selector button.active {
+  background: rgba(255,255,255,0.1);
+  opacity: 1;
+  color: #fff;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+}
+
 .analytics-summary {
   padding: 16px 20px 8px;
   text-align: center;
 }
 
-.analytics-summary p {
+.summary-header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 4px;
+}
+
+.summary-header-row p {
   margin: 0;
   font-size: 0.85rem;
   color: var(--text-color);
   opacity: 0.7;
 }
 
+.chart-limit-control {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.75rem;
+  color: var(--text-color);
+  opacity: 0.7;
+}
+
+.chart-limit-control select {
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  background-color: rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.1);
+  color: #fff;
+  border-radius: 6px;
+  padding: 2px 20px 2px 8px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  outline: none;
+  cursor: pointer;
+  background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+  background-repeat: no-repeat;
+  background-position: right 4px center;
+  background-size: 12px;
+  transition: all 0.2s ease;
+}
+
+.chart-limit-control select:hover {
+  background-color: rgba(255,255,255,0.15);
+}
+
+.chart-limit-control select option {
+  background: #1e1e2e;
+  color: #fff;
+}
+
 .analytics-summary h3 {
-  margin: 4px 0 0;
+  margin: 0;
   font-size: 1.5rem;
   color: var(--theme-color, #3b82f6);
 }
