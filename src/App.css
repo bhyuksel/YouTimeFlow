@@ -113,8 +113,7 @@ html, body, #root {
 .app-container.minimized .controls,
 .app-container.minimized .settings-btn,
 .app-container.minimized .close-btn,
-.app-container.minimized .settings-form,
-.app-container.minimized .drag-region {
+.app-container.minimized .settings-form {
   opacity: 0;
   pointer-events: none;
 }

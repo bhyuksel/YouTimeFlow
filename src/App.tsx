@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { getCurrentWindow, currentMonitor } from "@tauri-apps/api/window";
 import { LogicalSize, PhysicalPosition } from "@tauri-apps/api/dpi";
 import { invoke } from "@tauri-apps/api/core";
+import { WebviewWindow } from "@tauri-apps/api/webviewWindow";
 import { Analytics } from "./Analytics";
 import { Tasks, Task } from "./Tasks";
 import { saveSound, getAllSoundsInfo, getSoundData, deleteSound, AudioItemInfo } from "./utils/audioDB";
@@ -194,8 +195,41 @@ function App() {
 
   // alarmType removed
 
+  // Listen for cross-window state changes
+  useEffect(() => {
+    const handleStorage = (e: StorageEvent) => {
+      // MenuWindow modifies settings or tasks
+      if (e.key === 'settingsChanged' || e.key === 'tasks' || e.key === 'activeTaskId') {
+        setWorkTimeSetting(getInitialSecs("workTimeSec", "workTime", 25));
+        setBreakTimeSetting(getInitialSecs("breakTimeSec", "breakTime", 5));
+        setHoverDelaySetting(parseInt(localStorage.getItem("hoverDelay") || "5"));
+        setMinOpacitySetting(parseFloat(localStorage.getItem("minOpacity") || "0.6"));
+        setMinScaleSetting(parseFloat(localStorage.getItem("minScale") || "0.6"));
+        setThemeColor(localStorage.getItem("themeColor") || "#3b82f6");
+        
+        const savedPresets = localStorage.getItem("presets");
+        if (savedPresets) setPresets(JSON.parse(savedPresets));
+        
+        setActivePresetId(localStorage.getItem("activePresetId") || '1');
+        setWorkEndSoundId(localStorage.getItem("workEndSoundId") || "chime");
+        setBreakEndSoundId(localStorage.getItem("breakEndSoundId") || "chime");
+        setPomodoroIcon(localStorage.getItem("pomodoroIcon") || "🎯");
+        setAnchorPosition(localStorage.getItem("anchorPosition") || "center center");
+
+        const savedTasks = localStorage.getItem("tasks");
+        if (savedTasks) setTasks(JSON.parse(savedTasks));
+        
+        setActiveTaskId(localStorage.getItem("activeTaskId"));
+      }
+    };
+    
+    window.addEventListener('storage', handleStorage);
+    return () => window.removeEventListener('storage', handleStorage);
+  }, []);
+
   useEffect(() => {
     localStorage.setItem("pomodoroIcon", pomodoroIcon);
+    document.title = `${pomodoroIcon} YouTimeFlow`;
   }, [pomodoroIcon]);
 
   useEffect(() => {
@@ -583,78 +617,46 @@ function App() {
     setPresets(prev => prev.map(p => p.id === id ? { ...p, name: newName } : p));
   };
 
-  const saveSettings = async (e: React.FormEvent) => {
-    e.preventDefault();
-    localStorage.setItem("workTimeSec", workTimeSetting.toString());
-    localStorage.setItem("breakTimeSec", breakTimeSetting.toString());
-    localStorage.setItem("hoverDelay", hoverDelaySetting.toString());
-    localStorage.setItem("minOpacity", minOpacitySetting.toString());
-    localStorage.setItem("minScale", minScaleSetting.toString());
-    localStorage.setItem("presets", JSON.stringify(presets));
-    if (activePresetId) localStorage.setItem("activePresetId", activePresetId);
-    
-    if (!isRunning) {
-      setTimeLeft(mode === "work" ? workTimeSetting : breakTimeSetting);
-    }
-    
-    if (document.activeElement instanceof HTMLElement) {
-      document.activeElement.blur();
-    }
-    
-    setIsMenuOpen(false);
-    setEditingPresetId(null);
-    
-    setTimeout(async () => {
-      await changeWindowSize(300, 200, "in-place");
-      handleMouseLeave(true);
-    }, 400);
-  };
-
-  const cancelSettings = async () => {
-    setWorkTimeSetting(getInitialSecs("workTimeSec", "workTime", 25));
-    setBreakTimeSetting(getInitialSecs("breakTimeSec", "breakTime", 5));
-    setHoverDelaySetting(parseInt(localStorage.getItem("hoverDelay") || "5"));
-    setMinOpacitySetting(parseFloat(localStorage.getItem("minOpacity") || "0.6"));
-    setMinScaleSetting(parseFloat(localStorage.getItem("minScale") || "0.6"));
-    setThemeColor(localStorage.getItem("themeColor") || "#3b82f6");
-    setWorkEndSoundId(localStorage.getItem("workEndSoundId") || "chime");
-    setBreakEndSoundId(localStorage.getItem("breakEndSoundId") || "chime");
-    setPomodoroIcon(localStorage.getItem("pomodoroIcon") || "🎯");
-    
-    if (document.activeElement instanceof HTMLElement) {
-      document.activeElement.blur();
-    }
-    
-    setIsMenuOpen(false);
-    setEditingPresetId(null);
-    
-    setTimeout(async () => {
-      await changeWindowSize(300, 200, "in-place");
-      handleMouseLeave(true);
-    }, 400);
-  };
 
   const openMenu = async () => {
-    setIsHovered(true);
-    if (hoverTimeoutRef.current) {
-      clearTimeout(hoverTimeoutRef.current);
-      hoverTimeoutRef.current = null;
+    // If the window already exists, focus it instead of creating a new one
+    try {
+      const menuWin = new WebviewWindow('menu', {
+        url: '/?window=menu',
+        width: 750,
+        height: 600,
+        center: true,
+        decorations: false,
+        transparent: true,
+        title: "Menü"
+      });
+      menuWin.once('tauri://created', function () {
+        console.log('Menu window created successfully');
+      });
+    } catch(err) {
+      console.error("Failed to create window", err);
     }
-    
-    await changeWindowSize(750, 600, "in-place");
-    setIsMenuOpen(true);
   };
 
   const openTasks = async () => {
-    setIsHovered(true);
-    if (hoverTimeoutRef.current) {
-      clearTimeout(hoverTimeoutRef.current);
-      hoverTimeoutRef.current = null;
+    try {
+      const menuWin = new WebviewWindow('menu', {
+        url: '/?window=menu&tab=tasks',
+        width: 750,
+        height: 600,
+        center: true,
+        decorations: false,
+        transparent: true,
+        title: "Görevler"
+      });
+    } catch(err) {
+      console.error("Failed to create window", err);
     }
-    
-    await changeWindowSize(750, 600, "in-place");
-    setActiveTab('tasks');
-    setIsMenuOpen(true);
+  };
+
+  const cancelSettings = () => {
+    // this used to close the in-place menu. Now not needed in App, 
+    // but just in case keeping it empty or hiding.
   };
 
   const formatTime = (seconds: number, includeHours: boolean = false) => {
@@ -715,7 +717,6 @@ function App() {
         <div className="drag-handle"></div>
       </div>
       
-      {!isMenuOpen && (
         <button className="view-toggle-btn" onClick={() => setMainView(v => v === 'timer' ? 'analytics' : 'timer')} title="Görünümü Değiştir">
           {mainView === 'timer' ? (
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
@@ -723,20 +724,14 @@ function App() {
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
           )}
         </button>
-      )}
 
       <div className="window-controls">
         <button className="minimize-btn" onClick={() => appWindow.hide()} title="Gizle (Tepsiye)">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line></svg>
         </button>
-        {isMenuOpen && (
-          <button className="close-btn" onClick={cancelSettings} title="Menüyü Kapat">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-          </button>
-        )}
+
       </div>
 
-      {!isMenuOpen && (
         <div className="content">
             {mainView === 'timer' ? (
               <>
@@ -848,362 +843,6 @@ function App() {
               <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 11 12 14 22 4"></polyline><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path></svg>
             </button>
           </div>
-      )}
-
-      {isMenuOpen && (
-          <div className="unified-menu">
-            <div className="menu-sidebar" onPointerDown={(e) => { 
-              if (e.buttons === 1 && !(e.target as HTMLElement).closest('button')) {
-                appWindow.startDragging(); 
-              }
-            }}>
-              <div className="menu-drag-area"></div>
-              <div className="menu-tabs">
-                <button 
-                  className={`menu-tab ${activeTab === 'settings' ? 'active' : ''}`}
-                  onClick={() => setActiveTab('settings')}
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
-                  Ayarlar
-                </button>
-                <button 
-                  className={`menu-tab ${activeTab === 'analytics' ? 'active' : ''}`}
-                  onClick={() => setActiveTab('analytics')}
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 3v18h18"/><rect width="4" height="7" x="7" y="14" rx="1"/><rect width="4" height="12" x="15" y="9" rx="1"/></svg>
-                  İstatistikler
-                </button>
-                <button 
-                  className={`menu-tab ${activeTab === 'tasks' ? 'active' : ''}`}
-                  onClick={() => setActiveTab('tasks')}
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 11 12 14 22 4"></polyline><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path></svg>
-                  Görevler
-                </button>
-              </div>
-            </div>
-            
-            <div className="menu-content-area">
-              <div className="menu-content-drag-handle" onPointerDown={(e) => { if (e.buttons === 1) appWindow.startDragging(); }}></div>
-              {activeTab === 'settings' && (
-                <form className="settings-form" onSubmit={saveSettings}>
-                  <div className="settings-scroll-area">
-                    <div className="setting-group preset-group">
-                      <div className="setting-group-title">Hızlı Modlar (Ön Ayarlar)</div>
-                      <div className="preset-chips">
-                        {presets.map(p => (
-                          <div 
-                            key={p.id} 
-                            className={`preset-chip ${activePresetId === p.id ? 'active' : ''}`}
-                            onClick={() => selectPreset(p)}
-                            onDoubleClick={() => setEditingPresetId(p.id)}
-                          >
-                            {editingPresetId === p.id ? (
-                              <input 
-                                type="text" 
-                                autoFocus
-                                value={p.name}
-                                onChange={(e) => renamePreset(p.id, e.target.value)}
-                                onBlur={() => setEditingPresetId(null)}
-                                onKeyDown={(e) => { if(e.key === 'Enter') { e.preventDefault(); setEditingPresetId(null); } }}
-                              />
-                            ) : (
-                              <span>{p.name}</span>
-                            )}
-                            {activePresetId === p.id && presets.length > 1 && (
-                               <span className="preset-delete" onClick={(e) => deletePreset(p.id, e)}>×</span>
-                            )}
-                          </div>
-                        ))}
-                        <div className="preset-chip new-preset" onClick={addPreset}>+ Ekle</div>
-                      </div>
-                      <p className="preset-hint">* İsim değiştirmek için çift tıklayın, süreler alttan değiştiğinde otomatik güncellenir.</p>
-                    </div>
-
-                    <div className="setting-group">
-                      <div className="setting-group-title">Süreler (HH:MM:SS)</div>
-                      <div className="timers-container">
-                        <DigitalTimeInput label="Çalışma" totalSeconds={workTimeSetting} onChange={handleWorkTimeChange} />
-                        <DigitalTimeInput label="Mola" totalSeconds={breakTimeSetting} onChange={handleBreakTimeChange} />
-                      </div>
-                    </div>
-
-                    <div className="setting-group">
-                      <div className="setting-group-title">Görünüm & Davranış</div>
-                      
-                      <div className="preview-canvas">
-                          <div 
-                            className="app-container minimized preview-replica"
-                            style={{
-                              '--minimized-opacity': minOpacitySetting,
-                              '--minimized-scale': minScaleSetting,
-                              '--primary': themeColor,
-                              '--anchor-origin': 'center center',
-                              margin: '0 auto',
-                              position: 'relative'
-                            } as React.CSSProperties}
-                          >
-                            <div className="content">
-                              <div className="timer-display">
-                                <h1 className={`glow-text ${hasHours ? 'long-text' : ''}`}>{timeStr}</h1>
-                              </div>
-                            </div>
-                          </div>
-                      </div>
-
-                      <div className="modern-settings-grid">
-                        <div className="modern-setting-card">
-                          <label>Tema Rengi</label>
-                          <div className="color-picker-wrapper">
-                            <input type="color" value={themeColor} onChange={(e) => setThemeColor(e.target.value)} />
-                            <div className="color-display" style={{backgroundColor: themeColor}}></div>
-                            <span>{themeColor.toUpperCase()}</span>
-                          </div>
-                        </div>
-
-                        <div className="modern-setting-card">
-                          <label>Gizlenme Süresi</label>
-                          <div className="number-input-modern">
-                            <input 
-                              type="text" 
-                              inputMode="numeric"
-                              pattern="[0-9]*"
-                              value={hoverDelaySetting === 0 ? '' : hoverDelaySetting} 
-                              onChange={(e) => {
-                                const val = e.target.value.replace(/[^0-9]/g, '');
-                                if (val === '') {
-                                  setHoverDelaySetting(0);
-                                  return;
-                                }
-                                let num = parseInt(val, 10);
-                                if (num > 10) num = 10;
-                                setHoverDelaySetting(num);
-                              }}
-                              onBlur={() => {
-                                if (hoverDelaySetting < 1) setHoverDelaySetting(1);
-                              }}
-                            />
-                            <span>sn</span>
-                          </div>
-                        </div>
-                      </div>
-                      
-                      <div className="modern-sliders-section">
-                        <div className="modern-slider-row">
-                          <div className="slider-label">
-                            <span>Saydamlık</span>
-                            <span>{Math.round(minOpacitySetting * 100)}%</span>
-                          </div>
-                          <input type="range" className="styled-slider" min="0.1" max="1" step="0.1" value={minOpacitySetting} onChange={(e) => setMinOpacitySetting(Number(e.target.value))} style={{ '--slider-color': themeColor } as React.CSSProperties} />
-                        </div>
-                        
-                        <div className="modern-slider-row">
-                          <div className="slider-label">
-                            <span>Küçülme Oranı</span>
-                            <span>{Math.round(minScaleSetting * 100)}%</span>
-                          </div>
-                          <input type="range" className="styled-slider" min="0.3" max="1" step="0.1" value={minScaleSetting} onChange={(e) => setMinScaleSetting(Number(e.target.value))} style={{ '--slider-color': themeColor } as React.CSSProperties} />
-                        </div>
-                      </div>
-
-                      <div className="modern-anchor-section">
-                        <label>Küçülme Yönü (Ekran Köşesi)</label>
-                        <div className="anchor-grid-modern">
-                          {[
-                            {val: "top left", label: "↖"}, {val: "top center", label: "↑"}, {val: "top right", label: "↗"},
-                            {val: "center left", label: "←"}, {val: "center center", label: "•"}, {val: "center right", label: "→"},
-                            {val: "bottom left", label: "↙"}, {val: "bottom center", label: "↓"}, {val: "bottom right", label: "↘"}
-                          ].map(pos => (
-                            <button 
-                              key={pos.val} 
-                              type="button" 
-                              className={`anchor-btn ${anchorPosition === pos.val || (pos.val === 'center center' && !anchorPosition.includes('top') && !anchorPosition.includes('bottom') && !anchorPosition.includes('left') && !anchorPosition.includes('right')) ? 'active' : ''}`}
-                              onClick={() => setAnchorPosition(pos.val)}
-                              style={anchorPosition === pos.val || (pos.val === 'center center' && anchorPosition === 'center center') ? { backgroundColor: themeColor, borderColor: themeColor, boxShadow: `0 0 10px ${themeColor}60` } : {}}
-                              title={pos.val}
-                            >
-                              {pos.label}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="setting-group">
-                      <div className="setting-group-title">Ses Kütüphanesi & Alarmlar</div>
-                      
-                      <div className="setting-row">
-                        <label>Çalışma Bitiş Sesi:</label>
-                        <select 
-                          value={workEndSoundId} 
-                          onChange={(e) => {
-                            setWorkEndSoundId(e.target.value);
-                            playAlarm(e.target.value);
-                          }}
-                        >
-                          <optgroup label="Sistem Sesleri">
-                            <option value="chime">Çan (Chime)</option>
-                            <option value="beep">Bip (Beep)</option>
-                            <option value="bell">Zil (Soft Bell)</option>
-                          </optgroup>
-                          <optgroup label="Gömülü Sesler">
-                            {PREDEFINED_SOUNDS.map(sound => (
-                              <option key={sound.id} value={sound.id}>{sound.name}</option>
-                            ))}
-                          </optgroup>
-                          {soundLibrary.length > 0 && (
-                            <optgroup label="Yüklenen Sesler">
-                              {soundLibrary.map(sound => (
-                                <option key={sound.id} value={sound.id}>{sound.name}</option>
-                              ))}
-                            </optgroup>
-                          )}
-                        </select>
-                      </div>
-
-                      <div className="setting-row">
-                        <label>Mola Bitiş Sesi:</label>
-                        <select 
-                          value={breakEndSoundId} 
-                          onChange={(e) => {
-                            setBreakEndSoundId(e.target.value);
-                            playAlarm(e.target.value);
-                          }}
-                        >
-                          <optgroup label="Sistem Sesleri">
-                            <option value="chime">Çan (Chime)</option>
-                            <option value="beep">Bip (Beep)</option>
-                            <option value="bell">Zil (Soft Bell)</option>
-                          </optgroup>
-                          <optgroup label="Gömülü Sesler">
-                            {PREDEFINED_SOUNDS.map(sound => (
-                              <option key={sound.id} value={sound.id}>{sound.name}</option>
-                            ))}
-                          </optgroup>
-                          {soundLibrary.length > 0 && (
-                            <optgroup label="Yüklenen Sesler">
-                              {soundLibrary.map(sound => (
-                                <option key={sound.id} value={sound.id}>{sound.name}</option>
-                              ))}
-                            </optgroup>
-                          )}
-                        </select>
-                      </div>
-
-                      <div 
-                        className="drag-drop-zone"
-                        onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
-                        onDragEnter={(e) => { e.preventDefault(); e.stopPropagation(); }}
-                        onDragLeave={(e) => { e.preventDefault(); e.stopPropagation(); }}
-                        onDrop={handleAudioDrop}
-                      >
-                        <div className="drag-drop-content">
-                          <span className="drag-icon">🎵</span>
-                          <p>Yeni ses dosyası yüklemek için <strong>sürükleyip bırakın</strong> (Çoklu Seçim)</p>
-                          <p className="drag-hint">veya</p>
-                          <label className="audio-upload-label">
-                            Bilgisayardan Seç
-                            <input type="file" accept="audio/*,video/mp4,video/mpeg,.mp3,.wav,.ogg,.m4a,.aac,.flac,.webm,.mpeg,.mpg,.mp4" multiple onChange={handleAudioUpload} hidden />
-                          </label>
-                        </div>
-                      </div>
-
-                      {soundLibrary.length > 0 && (
-                        <button 
-                          type="button" 
-                          className="manage-sounds-btn" 
-                          onClick={() => setIsSoundManagerOpen(true)}
-                        >
-                          🎵 Yüklü Sesleri Yönet ({soundLibrary.length})
-                        </button>
-                      )}
-                    </div>
-
-                    <div className="setting-group">
-                      <div className="setting-group-title">Görevler</div>
-                      <div className="setting-row">
-                        <label>Görev İkonu (Pomodoro):</label>
-                        <select 
-                          value={pomodoroIcon} 
-                          onChange={(e) => setPomodoroIcon(e.target.value)}
-                        >
-                          <option value="🍅">🍅 Domates</option>
-                          <option value="⚡">⚡ Yıldırım</option>
-                          <option value="☕">☕ Kahve</option>
-                          <option value="🧠">🧠 Beyin</option>
-                          <option value="⏳">⏳ Kum Saati</option>
-                          <option value="🎯">🎯 Hedef</option>
-                          <option value="💎">💎 Elmas</option>
-                          <option value="✨">✨ Yıldız</option>
-                          <option value="🌸">🌸 Kiraz Çiçeği</option>
-                          <option value="🌻">🌻 Ayçiçeği</option>
-                          <option value="🌷">🌷 Lale</option>
-                          <option value="🌹">🌹 Gül</option>
-                        </select>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="settings-controls">
-                    <button type="button" className="cancel-btn" onClick={cancelSettings}>İptal</button>
-                    <button type="submit" className="save-btn">Kaydet</button>
-                  </div>
-                </form>
-              )}
-              {activeTab === 'analytics' && (
-                <div className="analytics-tab-wrapper">
-                  <Analytics />
-                </div>
-              )}
-              {activeTab === 'tasks' && (
-                <div className="tasks-tab-wrapper" style={{ flex: 1, height: '100%', display: 'flex', flexDirection: 'column' }}>
-                  <Tasks 
-                    tasks={tasks} 
-                    setTasks={setTasks} 
-                    activeTaskId={activeTaskId} 
-                    setActiveTaskId={setActiveTaskId} 
-                    themeColor={themeColor} 
-                    pomodoroIcon={pomodoroIcon}
-                  />
-                </div>
-              )}
-            </div>
-          </div>
-      )}
-
-      {isSoundManagerOpen && (
-        <div className="sound-manager-overlay" onClick={() => setIsSoundManagerOpen(false)}>
-          <div className="sound-manager-modal" onClick={e => e.stopPropagation()}>
-            <div className="sound-manager-header">
-              <h3>Ses Kütüphanesi</h3>
-              <button className="close-btn" onClick={() => setIsSoundManagerOpen(false)}>✕</button>
-            </div>
-            <div className="sound-manager-search">
-              <input 
-                type="text" 
-                placeholder="Ses ara..." 
-                value={soundSearchQuery} 
-                onChange={(e) => setSoundSearchQuery(e.target.value)} 
-              />
-            </div>
-            <div className="sound-manager-list">
-              {soundLibrary.filter(s => s.name.toLowerCase().includes(soundSearchQuery.toLowerCase())).map(sound => (
-                <div key={sound.id} className="sound-list-item">
-                  <span className="sound-name" title={sound.name}>{sound.name}</span>
-                  <div className="sound-actions">
-                    <button type="button" className="sound-play-btn" onClick={() => handlePreviewSound(sound.id)}>▶</button>
-                    <button type="button" className="sound-delete-btn" onClick={() => handleDeleteSound(sound.id)}>✕</button>
-                  </div>
-                </div>
-              ))}
-              {soundLibrary.filter(s => s.name.toLowerCase().includes(soundSearchQuery.toLowerCase())).length === 0 && (
-                <div className="no-sounds">Sonuç bulunamadı.</div>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
-
       <audio ref={audioRef} />
     </div>
   );
