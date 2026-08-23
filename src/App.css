@@ -69,9 +69,22 @@ html, body, #root {
   overflow: hidden;
 }
 
+@keyframes menuEnter {
+  0% {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
 .app-container.menu-open {
   width: 750px;
   height: 600px;
+  background: var(--bg-color-settings) !important;
+  animation: menuEnter 0.3s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
 }
 
 /* Teleport (Fade-Out) Animation */

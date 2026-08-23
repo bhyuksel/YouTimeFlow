@@ -619,8 +619,14 @@ function App() {
 
 
   const openMenu = async () => {
-    // If the window already exists, focus it instead of creating a new one
     try {
+      const existingMenu = await WebviewWindow.getByLabel('menu');
+      if (existingMenu) {
+        await existingMenu.show();
+        await existingMenu.setFocus();
+        return;
+      }
+      
       const menuWin = new WebviewWindow('menu', {
         url: '/?window=menu',
         width: 750,
@@ -640,6 +646,13 @@ function App() {
 
   const openTasks = async () => {
     try {
+      const existingMenu = await WebviewWindow.getByLabel('menu');
+      if (existingMenu) {
+        await existingMenu.show();
+        await existingMenu.setFocus();
+        return;
+      }
+      
       const menuWin = new WebviewWindow('menu', {
         url: '/?window=menu&tab=tasks',
         width: 750,

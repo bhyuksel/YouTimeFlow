@@ -93,6 +93,8 @@ const DigitalTimeInput = ({ label, totalSeconds, onChange }: { label: string, to
 };
 
 export default function MenuWindow() {
+  const [isClosing, setIsClosing] = useState(false);
+  
   const [mode, setMode] = useState<TimerMode>("work");
   const [isRunning, setIsRunning] = useState(false);
   
@@ -519,15 +521,21 @@ export default function MenuWindow() {
     // Trigger storage event so App.tsx knows settings changed
     localStorage.setItem('settingsChanged', Date.now().toString());
     
-    import('@tauri-apps/api/window').then(({ getCurrentWindow }) => {
-      getCurrentWindow().close();
-    });
+    setIsClosing(true);
+    setTimeout(() => {
+      import('@tauri-apps/api/window').then(({ getCurrentWindow }) => {
+        getCurrentWindow().close();
+      });
+    }, 250);
   };
 
   const cancelSettings = async () => {
-    import('@tauri-apps/api/window').then(({ getCurrentWindow }) => {
-      getCurrentWindow().close();
-    });
+    setIsClosing(true);
+    setTimeout(() => {
+      import('@tauri-apps/api/window').then(({ getCurrentWindow }) => {
+        getCurrentWindow().close();
+      });
+    }, 250);
   };  const formatTime = (seconds: number, includeHours: boolean = false) => {
     const h = Math.floor(seconds / 3600);
     const m = Math.floor((seconds % 3600) / 60);
@@ -547,7 +555,7 @@ export default function MenuWindow() {
   
 
   return (
-    <div className="app-container menu-open" style={{ '--primary': themeColor } as React.CSSProperties}>
+    <div className={`app-container menu-open ${isClosing ? 'teleporting' : ''}`} data-theme={themeColor} style={{ '--primary': themeColor } as React.CSSProperties}>
       <audio ref={audioRef} preload="auto" />
 
       <div className="unified-menu">
