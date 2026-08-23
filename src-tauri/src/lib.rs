@@ -2,6 +2,7 @@ use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 use std::fs;
+use std::panic;
 use tauri::{
     menu::{Menu, MenuItem},
     tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent},
@@ -24,7 +25,10 @@ pub struct AppState {
 
 #[tauri::command]
 fn get_usage_data(state: tauri::State<AppState>) -> UsageData {
-    state.usage_data.lock().unwrap().clone()
+    match state.usage_data.lock() {
+        Ok(guard) => guard.clone(),
+        Err(poisoned) => poisoned.into_inner().clone(),
+    }
 }
 
 #[tauri::command]
@@ -47,11 +51,18 @@ fn start_tracking_thread(_app_handle: AppHandle, state: Arc<Mutex<UsageData>>, d
         loop {
             std::thread::sleep(Duration::from_secs(1));
             
-            if let Ok(active_window) = get_active_window() {
+            let window_result = panic::catch_unwind(|| {
+                get_active_window()
+            });
+            
+            if let Ok(Ok(active_window)) = window_result {
                 let app_name = active_window.app_name.clone();
                 let date_str = Local::now().format("%Y-%m-%d").to_string();
                 
-                let mut data = state.lock().unwrap();
+                let mut data = match state.lock() {
+                    Ok(guard) => guard,
+                    Err(poisoned) => poisoned.into_inner(),
+                };
                 let daily = data.daily_usage.entry(date_str).or_insert_with(HashMap::new);
                 let count = daily.entry(app_name).or_insert(0);
                 *count += 1;
@@ -59,11 +70,12 @@ fn start_tracking_thread(_app_handle: AppHandle, state: Arc<Mutex<UsageData>>, d
             
             save_counter += 1;
             if save_counter >= 10 {
-                // Save every 10 seconds for faster updates in test
-                if let Ok(data) = state.lock() {
-                    if let Ok(json) = serde_json::to_string(&*data) {
-                        let _ = fs::write(&data_path, json);
-                    }
+                let data = match state.lock() {
+                    Ok(guard) => guard,
+                    Err(poisoned) => poisoned.into_inner(),
+                };
+                if let Ok(json) = serde_json::to_string(&*data) {
+                    let _ = fs::write(&data_path, json);
                 }
                 save_counter = 0;
             }

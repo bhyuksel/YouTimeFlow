@@ -1,0 +1,322 @@
+.tasks-container {
+  padding: 40px 20px 20px 20px;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  box-sizing: border-box;
+}
+
+/* Premium Add Task Input */
+.add-task-form {
+  display: flex;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 24px;
+  padding: 6px 6px 6px 18px;
+  margin-bottom: 24px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+  gap: 8px;
+}
+
+.add-task-form:focus-within {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.15);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+}
+
+.add-task-form input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  color: #fff;
+  font-size: 0.95rem;
+  outline: none;
+  font-family: inherit;
+}
+
+.add-task-form input::placeholder {
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.add-task-form button {
+  background: var(--theme-color, #3b82f6);
+  border: none;
+  border-radius: 18px;
+  padding: 8px 20px;
+  color: #fff;
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+  transition: all 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
+  white-space: nowrap;
+}
+
+.add-task-form button:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.add-task-form button:active {
+  transform: translateY(1px);
+}
+
+.layout-toggle-btn {
+  background: rgba(255, 255, 255, 0.05) !important;
+  color: rgba(255, 255, 255, 0.7) !important;
+  padding: 8px 14px !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.layout-toggle-btn:hover {
+  background: rgba(255, 255, 255, 0.1) !important;
+  color: #fff !important;
+  box-shadow: none !important;
+}
+
+/* Filter Controls */
+.task-filter-group {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 20px;
+  padding: 4px;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.task-filter-btn {
+  flex: 1;
+  background: transparent;
+  border: none;
+  color: rgba(255, 255, 255, 0.5);
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.task-filter-btn:hover {
+  color: rgba(255, 255, 255, 0.8);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.task-filter-btn.active {
+  background: var(--active-bg, #3b82f6);
+  color: #fff;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+}
+
+/* Task List Area */
+.tasks-list {
+  flex: 1;
+  overflow-y: auto;
+  display: grid;
+  grid-auto-rows: max-content;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  align-content: start;
+  padding-right: 6px;
+  padding-bottom: 10px;
+}
+
+.tasks-list.list-view {
+  grid-template-columns: 1fr;
+}
+
+.tasks-list::-webkit-scrollbar {
+  width: 4px;
+}
+.tasks-list::-webkit-scrollbar-track {
+  background: transparent;
+}
+.tasks-list::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 10px;
+}
+
+.no-tasks {
+  text-align: center;
+  color: rgba(255, 255, 255, 0.4);
+  font-size: 0.9rem;
+  margin-top: 40px;
+  padding: 30px;
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: 16px;
+  border: 1px dashed rgba(255, 255, 255, 0.1);
+  grid-column: 1 / -1;
+}
+
+/* Premium Task Items */
+.task-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.04);
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.task-item:hover {
+  background: rgba(255, 255, 255, 0.04);
+  transform: translateY(-1px);
+}
+
+/* Active Task Highlight */
+.task-item.active {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.1);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+}
+
+.task-item.active::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  background: var(--theme-color, #3b82f6);
+  border-radius: 4px 0 0 4px;
+  box-shadow: 0 0 10px var(--theme-color, #3b82f6);
+}
+
+.task-left {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex: 1;
+  overflow: hidden;
+}
+
+/* Checkbox (Circular) */
+.task-checkbox {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.task-checkbox:hover {
+  border-color: rgba(255, 255, 255, 0.5);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.task-checkbox.checked {
+  background: var(--theme-color, #10b981);
+  border-color: var(--theme-color, #10b981);
+  color: white;
+}
+
+.task-title {
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.95);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition: all 0.2s ease;
+}
+
+.task-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* Pomodoro Counter Pill */
+.task-pomodoros {
+  font-size: 0.8rem;
+  font-weight: 600;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 4px 10px;
+  border-radius: 20px;
+  color: rgba(255, 255, 255, 0.9);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.completed-divider {
+  margin-top: 24px;
+  margin-bottom: 8px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  color: rgba(255, 255, 255, 0.3);
+  padding-left: 8px;
+  flex-shrink: 0;
+  grid-column: 1 / -1;
+}
+
+/* Completed Task Styles */
+.task-item.completed {
+  background: rgba(0, 0, 0, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.02);
+  opacity: 0.6;
+  box-shadow: none;
+}
+
+.task-item.completed:hover {
+  background: rgba(0, 0, 0, 0.25);
+  transform: none;
+  opacity: 0.8;
+}
+
+.task-item.completed .task-title {
+  text-decoration: line-through;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.task-item.completed .task-pomodoros {
+  background: transparent;
+  border-color: rgba(255, 255, 255, 0.05);
+  color: rgba(255, 255, 255, 0.5);
+  box-shadow: none;
+}
+
+/* Elegant Delete Button */
+.delete-task-btn {
+  background: rgba(255, 255, 255, 0.05);
+  border: none;
+  color: rgba(255, 255, 255, 0.4);
+  cursor: pointer;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  padding: 0;
+}
+
+.delete-task-btn:hover {
+  color: #fff;
+  background: #ef4444;
+  box-shadow: 0 2px 10px rgba(239, 68, 68, 0.4);
+  transform: scale(1.1);
+}

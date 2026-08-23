@@ -109,7 +109,7 @@ export function Analytics() {
 
         {data.length > 0 ? (
           <div className="chart-container">
-            <ResponsiveContainer width="100%" height={180}>
+            <ResponsiveContainer width="100%" height={200}>
               <BarChart data={data.slice(0, chartLimit)} layout="vertical" margin={{ top: 0, right: 20, left: 0, bottom: 0 }}>
                 <XAxis type="number" hide />
                 <YAxis dataKey="name" type="category" width={90} tick={{ fill: 'var(--text-color)', fontSize: 11 }} />
