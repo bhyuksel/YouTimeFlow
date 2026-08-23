@@ -105,6 +105,7 @@ function App() {
   const [currentAppSeconds, setCurrentAppSeconds] = useState(0);
 
   const hoverTimeoutRef = useRef<number | null>(null);
+  const animTimeoutRef = useRef<number | null>(null);
   const preMenuPosRef = useRef<PhysicalPosition | null>(null);
   const clampedPosRef = useRef<{x: number, y: number} | null>(null);
   const audioCtxRef = useRef<AudioContext | null>(null);
@@ -337,6 +338,13 @@ function App() {
       clearTimeout(hoverTimeoutRef.current);
       hoverTimeoutRef.current = null;
     }
+    if (animTimeoutRef.current) {
+      clearTimeout(animTimeoutRef.current);
+      animTimeoutRef.current = null;
+    }
+    if (!isHovered && !isMenuOpen) {
+      changeWindowSize(300, 200, "snap");
+    }
     setIsHovered(true);
   };
 
@@ -459,8 +467,14 @@ function App() {
     if (isMenuOpen && !force) return; 
     
     hoverTimeoutRef.current = window.setTimeout(async () => {
+      const minW = Math.round(250 * minScaleSetting);
+      const minH = Math.round(120 * minScaleSetting);
+
       if (anchorPosition === "center center") {
         setIsHovered(false);
+        animTimeoutRef.current = window.setTimeout(() => {
+          changeWindowSize(minW, minH, "snap");
+        }, 400);
         return;
       }
 
@@ -474,9 +488,15 @@ function App() {
          // 3. Işınlandıktan sonra tekrar görünür yap ve küçül
          if (didTeleport) {
             setIsHovered(false);
+            animTimeoutRef.current = window.setTimeout(() => {
+              changeWindowSize(minW, minH, "snap");
+            }, 400);
          } else {
             // Eğer ışınlanmadıysa (zaten oradaysa), sadece küçül.
             setIsHovered(false);
+            animTimeoutRef.current = window.setTimeout(() => {
+              changeWindowSize(minW, minH, "snap");
+            }, 400);
          }
          setIsTeleporting(false); 
       }, 200);
@@ -622,7 +642,7 @@ function App() {
     try {
       const menuWin = await WebviewWindow.getByLabel('menu');
       if (menuWin) {
-        import('@tauri-apps/api/event').then(({ emit }) => emit('menu-opened'));
+        import('@tauri-apps/api/event').then(({ emit }) => emit('menu-opened', { tab: 'settings' }));
         await menuWin.show();
         await menuWin.setAlwaysOnTop(true);
         await menuWin.setAlwaysOnTop(false);
@@ -639,7 +659,7 @@ function App() {
     try {
       const existingMenu = await WebviewWindow.getByLabel('menu');
       if (existingMenu) {
-        import('@tauri-apps/api/event').then(({ emit }) => emit('menu-opened'));
+        import('@tauri-apps/api/event').then(({ emit }) => emit('menu-opened', { tab: 'tasks' }));
         await existingMenu.show();
         await existingMenu.setAlwaysOnTop(true);
         await existingMenu.setAlwaysOnTop(false);

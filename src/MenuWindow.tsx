@@ -134,7 +134,12 @@ export default function MenuWindow() {
     
     // Also fallback to listening for an event from App.tsx just in case
     import('@tauri-apps/api/event').then(({ listen }) => {
-      listen('menu-opened', () => setIsClosing(false));
+      listen('menu-opened', (event: any) => {
+        setIsClosing(false);
+        if (event.payload && event.payload.tab) {
+          setActiveTab(event.payload.tab);
+        }
+      });
     });
 
     return () => {
