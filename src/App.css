@@ -1,4 +1,5 @@
 @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Caveat:wght@700&display=swap');
 
 :root {
   --bg-color: rgba(20, 20, 20, 0.45);
@@ -106,10 +107,33 @@ html, body, #root {
   opacity: 0.7;
 }
 
+.window-close-btn {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: var(--btn-bg);
+  border: 1px solid var(--glass-border);
+  color: var(--text-color);
+  font-size: 16px;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 100;
+  transition: all 0.2s ease;
+}
+
+.window-close-btn:hover {
+  background: rgba(239, 68, 68, 0.8);
+  transform: scale(1.1);
+}
+
 /* Minimized State */
 .app-container.minimized {
-  width: 250px;
-  height: 120px;
   opacity: var(--minimized-opacity, 0.6);
   transform: scale(var(--minimized-scale, 0.6));
   border-radius: 36px;
@@ -892,18 +916,42 @@ button:active {
   border-top: 1px solid var(--glass-border);
 }
 
+.cancel-btn, .save-btn {
+  padding: 10px 24px;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  border: none;
+  outline: none;
+}
+
 .cancel-btn {
-  background: transparent;
-  opacity: 0.7;
+  background: var(--btn-bg);
+  color: var(--text-color);
+  border: 1px solid var(--glass-border);
+}
+
+.cancel-btn:hover {
+  background: var(--btn-hover);
+  border-color: var(--glass-border-highlight);
+  transform: translateY(-1px);
 }
 
 .save-btn {
   background: var(--text-color);
-  color: var(--bg-color);
+  color: var(--bg-color-settings);
+  box-shadow: 0 4px 12px rgba(255, 255, 255, 0.15);
 }
+
 .save-btn:hover {
   background: var(--text-color);
-  filter: brightness(0.9);
+  color: var(--bg-color-settings);
+  filter: brightness(0.95);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(255, 255, 255, 0.25);
 }
 /* UNIFIED MENU STYLES */
 .unified-menu {
@@ -919,10 +967,88 @@ button:active {
   display: flex;
   flex-direction: column;
   cursor: grab;
+  position: relative;
+  transition: width 0.3s ease;
+}
+
+.menu-sidebar.resizing {
+  transition: none !important;
 }
 
 .menu-sidebar:active {
   cursor: grabbing;
+}
+
+.sidebar-resizer {
+  position: absolute;
+  top: 0;
+  right: -3px;
+  width: 6px;
+  height: 100%;
+  cursor: col-resize;
+  z-index: 50;
+}
+
+.menu-app-brand {
+  padding: 15px 15px 5px 15px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.brand-text {
+  font-family: 'Caveat', cursive, sans-serif;
+  font-size: 24px;
+  font-weight: 700;
+  white-space: nowrap;
+  user-select: none;
+  display: flex;
+  align-items: center;
+  letter-spacing: 0.5px;
+}
+
+.brand-letter {
+  font-size: 26px;
+}
+
+.brand-letter.y { color: #f43f5e; } /* Rose */
+.brand-letter.t { color: #3b82f6; } /* Blue */
+.brand-letter.f { color: #10b981; } /* Emerald */
+
+.brand-rest {
+  color: var(--text-color);
+  transition: all 0.3s ease;
+}
+
+.menu-sidebar.collapsed .menu-app-brand .brand-rest {
+  display: none;
+}
+
+.menu-sidebar.collapsed .menu-app-brand {
+  flex-direction: column;
+  padding: 20px 0 10px 0;
+  justify-content: center;
+  gap: 16px;
+}
+
+.sidebar-collapse-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-color);
+  opacity: 0.6;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+  border-radius: 4px;
+  transition: all 0.2s;
+  flex-shrink: 0;
+}
+
+.sidebar-collapse-btn:hover {
+  opacity: 1;
+  background: rgba(255, 255, 255, 0.1);
 }
 
 .menu-drag-area {
@@ -959,6 +1085,18 @@ button:active {
   gap: 12px;
   margin: 4px 12px;
   border-radius: 8px;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.menu-sidebar.collapsed .menu-tab {
+  margin: 4px 8px;
+  padding: 10px;
+  justify-content: center;
+}
+
+.menu-sidebar.collapsed .menu-tab span {
+  display: none;
 }
 
 .menu-tab svg {
@@ -995,6 +1133,8 @@ button:active {
   height: 100%;
   overflow: hidden;
   position: relative;
+  padding-top: 40px;
+  box-sizing: border-box;
 }
 
 .menu-content-drag-handle {
@@ -1472,4 +1612,25 @@ button:active {
   color: rgba(255, 255, 255, 0.5);
   padding: 20px 0;
   font-size: 0.9rem;
+}
+
+@keyframes tabFadeIn {
+  0% {
+    opacity: 0;
+    transform: translateY(12px) scale(0.99);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.analytics-tab-wrapper,
+.tasks-tab-wrapper,
+.settings-form {
+  animation: tabFadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  will-change: transform, opacity;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
 }

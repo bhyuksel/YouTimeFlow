@@ -620,27 +620,18 @@ function App() {
 
   const openMenu = async () => {
     try {
-      const existingMenu = await WebviewWindow.getByLabel('menu');
-      if (existingMenu) {
-        await existingMenu.show();
-        await existingMenu.setFocus();
-        return;
+      const menuWin = await WebviewWindow.getByLabel('menu');
+      if (menuWin) {
+        import('@tauri-apps/api/event').then(({ emit }) => emit('menu-opened'));
+        await menuWin.show();
+        await menuWin.setAlwaysOnTop(true);
+        await menuWin.setAlwaysOnTop(false);
+        await menuWin.setFocus();
+      } else {
+        console.error("Menu window not found. Please ensure it is defined in tauri.conf.json.");
       }
-      
-      const menuWin = new WebviewWindow('menu', {
-        url: '/?window=menu',
-        width: 750,
-        height: 600,
-        center: true,
-        decorations: false,
-        transparent: true,
-        title: "Menü"
-      });
-      menuWin.once('tauri://created', function () {
-        console.log('Menu window created successfully');
-      });
     } catch(err) {
-      console.error("Failed to create window", err);
+      console.error("Failed to show menu window", err);
     }
   };
 
@@ -648,7 +639,10 @@ function App() {
     try {
       const existingMenu = await WebviewWindow.getByLabel('menu');
       if (existingMenu) {
+        import('@tauri-apps/api/event').then(({ emit }) => emit('menu-opened'));
         await existingMenu.show();
+        await existingMenu.setAlwaysOnTop(true);
+        await existingMenu.setAlwaysOnTop(false);
         await existingMenu.setFocus();
         return;
       }

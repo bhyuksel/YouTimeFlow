@@ -94,7 +94,54 @@ const DigitalTimeInput = ({ label, totalSeconds, onChange }: { label: string, to
 
 export default function MenuWindow() {
   const [isClosing, setIsClosing] = useState(false);
-  
+  const [isDragActive, setIsDragActive] = useState(false);
+  const [sidebarWidth, setSidebarWidth] = useState(170);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [isDraggingSidebar, setIsDraggingSidebar] = useState(false);
+  const isResizing = useRef(false);
+  const startX = useRef(0);
+  const startWidth = useRef(170);
+
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!isResizing.current) return;
+      const newWidth = Math.max(120, Math.min(400, startWidth.current + (e.clientX - startX.current)));
+      setSidebarWidth(newWidth);
+      if (newWidth > 120) {
+        setIsSidebarCollapsed(false);
+      }
+    };
+
+    const handleMouseUp = () => {
+      if (isResizing.current) {
+        isResizing.current = false;
+        setIsDraggingSidebar(false);
+        document.body.style.cursor = 'default';
+      }
+    };
+
+    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mouseup', handleMouseUp);
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, []);
+
+  useEffect(() => {
+    const onFocus = () => setIsClosing(false);
+    window.addEventListener('focus', onFocus);
+    
+    // Also fallback to listening for an event from App.tsx just in case
+    import('@tauri-apps/api/event').then(({ listen }) => {
+      listen('menu-opened', () => setIsClosing(false));
+    });
+
+    return () => {
+      window.removeEventListener('focus', onFocus);
+    };
+  }, []);
+
   const [mode, setMode] = useState<TimerMode>("work");
   const [isRunning, setIsRunning] = useState(false);
   
@@ -226,6 +273,15 @@ export default function MenuWindow() {
     }
     return () => clearInterval(interval);
   }, [isRunning, timeLeft, mode, workTimeSetting, breakTimeSetting, workEndSoundId, breakEndSoundId]);
+
+  useEffect(() => {
+    const handleSoundDropped = async () => {
+      const updatedLibrary = await getAllSoundsInfo();
+      setSoundLibrary(updatedLibrary);
+    };
+    window.addEventListener('tauri-sound-dropped', handleSoundDropped);
+    return () => window.removeEventListener('tauri-sound-dropped', handleSoundDropped);
+  }, []);
 
   const playAlarm = async (soundId: string) => {
     if (["chime", "beep", "bell"].includes(soundId)) {
@@ -518,13 +574,20 @@ export default function MenuWindow() {
     localStorage.setItem("presets", JSON.stringify(presets));
     if (activePresetId) localStorage.setItem("activePresetId", activePresetId);
     
+    // Save theme and sounds
+    localStorage.setItem("themeColor", themeColor);
+    localStorage.setItem("workEndSoundId", workEndSoundId);
+    localStorage.setItem("breakEndSoundId", breakEndSoundId);
+    localStorage.setItem("pomodoroIcon", pomodoroIcon);
+    localStorage.setItem("anchorPosition", anchorPosition);
+    
     // Trigger storage event so App.tsx knows settings changed
     localStorage.setItem('settingsChanged', Date.now().toString());
     
     setIsClosing(true);
     setTimeout(() => {
       import('@tauri-apps/api/window').then(({ getCurrentWindow }) => {
-        getCurrentWindow().close();
+        getCurrentWindow().hide();
       });
     }, 250);
   };
@@ -533,10 +596,12 @@ export default function MenuWindow() {
     setIsClosing(true);
     setTimeout(() => {
       import('@tauri-apps/api/window').then(({ getCurrentWindow }) => {
-        getCurrentWindow().close();
+        getCurrentWindow().hide();
       });
     }, 250);
-  };  const formatTime = (seconds: number, includeHours: boolean = false) => {
+  };
+
+  const formatTime = (seconds: number, includeHours: boolean = false) => {
     const h = Math.floor(seconds / 3600);
     const m = Math.floor((seconds % 3600) / 60);
     const s = seconds % 60;
@@ -559,33 +624,78 @@ export default function MenuWindow() {
       <audio ref={audioRef} preload="auto" />
 
       <div className="unified-menu">
-            <div className="menu-sidebar" onPointerDown={(e) => { 
-              if (e.buttons === 1 && !(e.target as HTMLElement).closest('button')) {
-                appWindow.startDragging(); 
-              }
-            }}>
+        <button 
+          className="window-close-btn" 
+          onClick={cancelSettings}
+          title="Kapat"
+        >
+          ✕
+        </button>
+            <div 
+              className={`menu-sidebar ${isSidebarCollapsed ? 'collapsed' : ''} ${isDraggingSidebar ? 'resizing' : ''}`} 
+              style={{ width: isSidebarCollapsed ? 60 : sidebarWidth, flexShrink: 0 }}
+              onPointerDown={(e) => { 
+                if (e.buttons === 1 && !(e.target as HTMLElement).closest('button') && !(e.target as HTMLElement).closest('.sidebar-resizer')) {
+                  appWindow.startDragging(); 
+                }
+              }}
+            >
+              {!isSidebarCollapsed && (
+                <div 
+                  className="sidebar-resizer"
+                  onPointerDown={(e) => {
+                    e.stopPropagation();
+                    isResizing.current = true;
+                    setIsDraggingSidebar(true);
+                    startX.current = e.clientX;
+                    startWidth.current = sidebarWidth;
+                    document.body.style.cursor = 'col-resize';
+                  }}
+                />
+              )}
               <div className="menu-drag-area"></div>
+              <div className="menu-app-brand">
+                <button 
+                  className="sidebar-collapse-btn" 
+                  onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+                  title={isSidebarCollapsed ? "Menüyü Genişlet" : "Menüyü Daralt"}
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <line x1="3" y1="12" x2="21" y2="12"></line>
+                    <line x1="3" y1="6" x2="21" y2="6"></line>
+                    <line x1="3" y1="18" x2="21" y2="18"></line>
+                  </svg>
+                </button>
+                <div className="brand-text">
+                  <span className="brand-letter y">Y</span><span className="brand-rest">ou</span>
+                  <span className="brand-letter t">T</span><span className="brand-rest">ime</span>
+                  <span className="brand-letter f">F</span><span className="brand-rest">low</span>
+                </div>
+              </div>
               <div className="menu-tabs">
                 <button 
                   className={`menu-tab ${activeTab === 'settings' ? 'active' : ''}`}
                   onPointerDown={(e) => { e.stopPropagation(); setActiveTab('settings'); }}
+                  title="Ayarlar"
                 >
                   <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
-                  Ayarlar
+                  <span>Ayarlar</span>
                 </button>
                 <button 
                   className={`menu-tab ${activeTab === 'analytics' ? 'active' : ''}`}
                   onPointerDown={(e) => { e.stopPropagation(); setActiveTab('analytics'); }}
+                  title="İstatistikler"
                 >
                   <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 3v18h18"/><rect width="4" height="7" x="7" y="14" rx="1"/><rect width="4" height="12" x="15" y="9" rx="1"/></svg>
-                  İstatistikler
+                  <span>İstatistikler</span>
                 </button>
                 <button 
                   className={`menu-tab ${activeTab === 'tasks' ? 'active' : ''}`}
                   onPointerDown={(e) => { e.stopPropagation(); setActiveTab('tasks'); }}
+                  title="Görevler"
                 >
-                  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 11 12 14 22 4"></polyline><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path></svg>
-                  Görevler
+                  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="m9 11 3 3L22 4"/></svg>
+                  <span>Görevler</span>
                 </button>
               </div>
             </div>
@@ -797,23 +907,24 @@ export default function MenuWindow() {
                         </select>
                       </div>
 
-                      <div 
-                        className="drag-drop-zone"
-                        onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
-                        onDragEnter={(e) => { e.preventDefault(); e.stopPropagation(); }}
-                        onDragLeave={(e) => { e.preventDefault(); e.stopPropagation(); }}
-                        onDrop={handleAudioDrop}
+                      <label 
+                        className={`drag-drop-zone ${isDragActive ? 'drag-active' : ''}`}
+                        style={{ cursor: 'pointer', display: 'block' }}
+                        onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); setIsDragActive(true); }}
+                        onDragEnter={(e) => { e.preventDefault(); e.stopPropagation(); setIsDragActive(true); }}
+                        onDragLeave={(e) => { e.preventDefault(); e.stopPropagation(); setIsDragActive(false); }}
+                        onDrop={(e) => { setIsDragActive(false); handleAudioDrop(e); }}
                       >
                         <div className="drag-drop-content">
                           <span className="drag-icon">🎵</span>
                           <p>Yeni ses dosyası yüklemek için <strong>sürükleyip bırakın</strong> (Çoklu Seçim)</p>
                           <p className="drag-hint">veya</p>
-                          <label className="audio-upload-label">
+                          <span className="audio-upload-label">
                             Bilgisayardan Seç
                             <input type="file" accept="audio/*,video/mp4,video/mpeg,.mp3,.wav,.ogg,.m4a,.aac,.flac,.webm,.mpeg,.mpg,.mp4" multiple onChange={handleAudioUpload} hidden />
-                          </label>
+                          </span>
                         </div>
-                      </div>
+                      </label>
 
                       {soundLibrary.length > 0 && (
                         <button 

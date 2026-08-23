@@ -87,6 +87,7 @@ fn start_tracking_thread(_app_handle: AppHandle, state: Arc<Mutex<UsageData>>, d
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
+        .plugin(tauri_plugin_fs::init())
         .setup(|app| {
             let app_data_dir = app.path().app_data_dir().expect("failed to get app data dir");
             let _ = fs::create_dir_all(&app_data_dir);
