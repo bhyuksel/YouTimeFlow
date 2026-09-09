@@ -217,6 +217,21 @@ export default function MenuWindow() {
     };
   }, []);
 
+  // Listen for storage events from App.tsx (e.g. task completed)
+  useEffect(() => {
+    const handleStorage = (e: StorageEvent) => {
+      if (e.key === 'tasks') {
+        const savedTasks = localStorage.getItem("tasks");
+        if (savedTasks) setTasks(JSON.parse(savedTasks));
+      } else if (e.key === 'activeTaskId') {
+        setActiveTaskId(localStorage.getItem("activeTaskId"));
+      }
+    };
+    
+    window.addEventListener('storage', handleStorage);
+    return () => window.removeEventListener('storage', handleStorage);
+  }, []);
+
   useEffect(() => {
     const fetchUsage = async () => {
       if (activeTab !== 'analytics') return;
