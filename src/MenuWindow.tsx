@@ -4,6 +4,7 @@ import { getCurrentWindow, currentMonitor } from "@tauri-apps/api/window";
 import { LogicalSize, PhysicalPosition } from "@tauri-apps/api/dpi";
 import { invoke } from "@tauri-apps/api/core";
 import { getCurrentWebview } from "@tauri-apps/api/webview";
+import { getVersion } from "@tauri-apps/api/app";
 import { readFile } from "@tauri-apps/plugin-fs";
 import { Analytics } from "./Analytics";
 import { Tasks, Task } from "./Tasks";
@@ -162,6 +163,11 @@ export default function MenuWindow() {
 
   const [mode, setMode] = useState<TimerMode>("work");
   const [isRunning, setIsRunning] = useState(false);
+  const [appVersion, setAppVersion] = useState<string>("");
+
+  useEffect(() => {
+    getVersion().then(ver => setAppVersion(ver)).catch(console.error);
+  }, []);
   
   const [editingPresetId, setEditingPresetId] = useState<string | null>(null);
   
@@ -855,6 +861,11 @@ export default function MenuWindow() {
                   <span className="brand-letter t">T</span><span className="brand-rest">ime</span>
                   <span className="brand-letter f">F</span><span className="brand-rest">low</span>
                 </div>
+                {appVersion && (
+                  <div className="app-version-badge" style={{ fontSize: '0.65rem', opacity: 0.5, textAlign: 'center', marginTop: '-15px', marginBottom: '15px' }}>
+                    v{appVersion}
+                  </div>
+                )}
               </div>
               <div className="menu-tabs">
                 <button 
