@@ -36,7 +36,8 @@ html, body, #root {
   padding: 0;
   width: 100vw;
   height: 100vh;
-  background-color: transparent !important;
+  /* Fix Linux WebKitGTK bug where fully transparent windows ignore drag-and-drop events */
+  background-color: rgba(0, 0, 0, 0.01) !important;
   overflow: hidden;
   font-family: 'Outfit', -apple-system, sans-serif;
   color: var(--text-color);
