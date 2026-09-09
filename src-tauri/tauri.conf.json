@@ -37,5 +37,13 @@
       "icons/icon.icns",
       "icons/icon.ico"
     ]
+  },
+  "plugins": {
+    "updater": {
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IERGMDcwRDkwMkREQjlDMDMKUldRRG5Oc3RrQTBIMzBQNG5sV0JWSFA5cktERk5KckJpbmJLbTFPbUZDK3ZNcElVTStoMld0TGwK",
+      "endpoints": [
+        "https://github.com/bhyuksel/YouTimeFlow/releases/latest/download/latest.json"
+      ]
+    }
   }
 }

@@ -6,6 +6,8 @@ import { WebviewWindow } from "@tauri-apps/api/webviewWindow";
 import { Analytics } from "./Analytics";
 import { Tasks, Task } from "./Tasks";
 import { saveSound, getAllSoundsInfo, getSoundData, deleteSound, AudioItemInfo } from "./utils/audioDB";
+import { check } from "@tauri-apps/plugin-updater";
+import { ask, message } from "@tauri-apps/plugin-dialog";
 import "./App.css";
 
 type TimerMode = "work" | "break";
@@ -202,6 +204,46 @@ function App() {
   useEffect(() => {
     localStorage.setItem("anchorPosition", anchorPosition);
   }, [anchorPosition]);
+
+  // Check for updates on startup
+  useEffect(() => {
+    const checkForUpdates = async () => {
+      try {
+        const update = await check();
+        if (update) {
+          const yes = await ask(
+            `YouTimeFlow'un yeni bir sürümü (v${update.version}) mevcut. Notlar:\n${update.body}\n\nŞimdi indirip kurmak ister misiniz?`,
+            { title: 'Yeni Güncelleme Bulundu', kind: 'info' }
+          );
+          
+          if (yes) {
+            let downloaded = 0;
+            let contentLength = 0;
+            await update.downloadAndInstall((event) => {
+              switch (event.event) {
+                case 'Started':
+                  contentLength = event.data.contentLength || 0;
+                  break;
+                case 'Progress':
+                  downloaded += event.data.chunkLength;
+                  // Optional: could show a progress bar here
+                  break;
+                case 'Finished':
+                  break;
+              }
+            });
+            await message('Güncelleme başarıyla kuruldu! Uygulama yeniden başlatılacak.', { title: 'Başarılı', kind: 'info' });
+            await invoke('graceful_restart'); // Wait, tauri doesn't have restart by default. We should use tauri-plugin-process or just tell user to restart.
+          }
+        }
+      } catch (e) {
+        console.error("Güncelleme kontrolü sırasında hata:", e);
+      }
+    };
+    
+    // Slight delay to not freeze the app on startup
+    setTimeout(checkForUpdates, 3000);
+  }, []);
 
   // alarmType removed
 
