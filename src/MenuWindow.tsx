@@ -101,13 +101,6 @@ export default function MenuWindow() {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isDraggingSidebar, setIsDraggingSidebar] = useState(false);
   
-  const [debugLogs, setDebugLogs] = useState<string[]>([]);
-  const addDebugLog = (msg: string) => {
-    setDebugLogs(prev => {
-      const updated = [msg, ...prev].slice(0, 10);
-      return updated;
-    });
-  };
   const isResizing = useRef(false);
   const startX = useRef(0);
   const startWidth = useRef(170);
@@ -524,7 +517,6 @@ export default function MenuWindow() {
       try {
         const { getCurrentWebview } = await import('@tauri-apps/api/webview');
         unlistenPromise = getCurrentWebview().onDragDropEvent(async (event) => {
-          addDebugLog(`[Native] Event type: ${event.payload.type}`);
           
           if (event.payload.type === 'over') {
             setIsDragActive(true);
@@ -533,7 +525,6 @@ export default function MenuWindow() {
           } else if (event.payload.type === 'drop') {
             setIsDragActive(false);
             const paths = event.payload.paths;
-            addDebugLog(`[Native] Drop paths: ${JSON.stringify(paths)}`);
             if (!paths || paths.length === 0) return;
             
             const currentLibrary = await getAllSoundsInfo();
@@ -542,10 +533,8 @@ export default function MenuWindow() {
               const path = paths[i];
               const name = path.split(/[/\\]/).pop() || 'Unknown';
               const ext = name.split('.').pop()?.toLowerCase();
-              addDebugLog(`[Native] File: ${name}, Ext: ${ext}`);
               if (ext === 'mp3' || ext === 'wav' || ext === 'ogg' || ext === 'aac' || ext === 'm4a' || ext === 'flac' || ext === 'webm' || ext === 'mpeg' || ext === 'mpg' || ext === 'mp4') {
                 if (currentLibrary.some(s => s.name === name)) {
-                  addDebugLog(`[Native] Already exists: ${name}`);
                   continue;
                 }
                 
@@ -568,18 +557,15 @@ export default function MenuWindow() {
                       if (dataUrl) {
                         const newId = Date.now().toString() + "-" + i;
                         await saveSound(newId, name, dataUrl);
-                        addDebugLog(`[Native] Saved: ${name}`);
                       }
                       resolve();
                     };
                     reader.readAsDataURL(blob);
                   });
                 } catch (err: any) {
-                  addDebugLog(`[Native] Error reading: ${err.message || err}`);
                   console.error("Failed to read dropped file natively:", err);
                 }
               } else {
-                addDebugLog(`[Native] Skipped ext: ${ext}`);
               }
             }
             const updatedLibrary = await getAllSoundsInfo();
@@ -590,7 +576,6 @@ export default function MenuWindow() {
         const unlisten = await unlistenPromise;
         if (isCancelled) unlisten();
       } catch (err: any) {
-        addDebugLog(`[Native] Setup failed: ${err.message || err}`);
         console.warn("Native drag drop setup failed:", err);
       }
     };
@@ -607,17 +592,14 @@ export default function MenuWindow() {
     e.preventDefault();
     e.stopPropagation();
     
-    addDebugLog(`[HTML5] handleAudioDrop fired`);
     
     let processed = false;
 
     const files = e.dataTransfer.files;
-    addDebugLog(`[HTML5] Files length: ${files?.length}`);
     
     if (files && files.length > 0) {
       for (let i = 0; i < files.length; i++) {
         const file = files[i];
-        addDebugLog(`[HTML5] File: ${file.name}, type: ${file.type}`);
         if (file && isAudioFile(file)) {
           if (soundLibrary.some(s => s.name === file.name)) {
             console.warn(`File ${file.name} is already in the library.`);
@@ -632,7 +614,6 @@ export default function MenuWindow() {
                 const newId = Date.now().toString() + "-" + i;
                 await saveSound(newId, file.name, base64);
                 processed = true;
-                addDebugLog(`[HTML5] Saved via FileReader: ${file.name}`);
               }
               resolve();
             };
@@ -643,12 +624,9 @@ export default function MenuWindow() {
     } else {
       // Fallback for Linux WebKitGTK where e.dataTransfer.files might be empty
       // but the file paths are provided in text/uri-list
-      addDebugLog(`[HTML5] No files, checking uri-list...`);
       const uriList = e.dataTransfer.getData('text/uri-list');
-      addDebugLog(`[HTML5] uriList: ${uriList ? 'Found' : 'Empty'}`);
       if (uriList) {
         const paths = uriList.split('\n').filter(line => line.startsWith('file://')).map(line => decodeURIComponent(line.replace('file://', '').trim()));
-        addDebugLog(`[HTML5] Found paths: ${paths.length}`);
         for (let i = 0; i < paths.length; i++) {
           const path = paths[i];
           const name = path.split(/[/\\]/).pop() || 'Unknown';
@@ -678,23 +656,19 @@ export default function MenuWindow() {
                     const newId = Date.now().toString() + "-" + i + "-uri";
                     await saveSound(newId, name, dataUrl);
                     processed = true;
-                    addDebugLog(`[HTML5] Saved via Native FS fallback: ${name}`);
                   }
                   resolve();
                 };
                 reader.readAsDataURL(blob);
               });
             } catch (err: any) {
-              addDebugLog(`[HTML5] Native FS read failed: ${err.message || err}`);
               console.error("Failed to read dropped file natively via uri-list:", err);
             }
           } else {
-             addDebugLog(`[HTML5] Skipped fallback ext: ${ext}`);
           }
         }
       } else {
          const types = e.dataTransfer.types;
-         addDebugLog(`[HTML5] Types available: ${JSON.stringify(types)}`);
       }
     }
     
@@ -1119,15 +1093,6 @@ export default function MenuWindow() {
                           </span>
                         </div>
                       </label>
-
-                      {debugLogs.length > 0 && (
-                        <div style={{ marginTop: '10px', padding: '10px', background: 'rgba(0,0,0,0.5)', color: '#0f0', borderRadius: '5px', fontSize: '11px', textAlign: 'left', maxHeight: '150px', overflowY: 'auto' }}>
-                          <strong>Debug Logs:</strong><br />
-                          {debugLogs.map((log, i) => (
-                            <div key={i}>{log}</div>
-                          ))}
-                        </div>
-                      )}
 
                       {soundLibrary.length > 0 && (
                         <button 

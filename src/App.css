@@ -1416,6 +1416,20 @@ button:active {
   background: rgba(255, 255, 255, 0.05);
 }
 
+.drag-drop-zone.drag-active {
+  border-color: var(--primary, #3b82f6);
+  background: rgba(59, 130, 246, 0.1);
+  box-shadow: 0 0 15px rgba(59, 130, 246, 0.3);
+  transform: scale(1.02);
+  animation: pulse-border 1.5s infinite;
+}
+
+@keyframes pulse-border {
+  0% { box-shadow: 0 0 15px rgba(59, 130, 246, 0.3); }
+  50% { box-shadow: 0 0 25px rgba(59, 130, 246, 0.5); }
+  100% { box-shadow: 0 0 15px rgba(59, 130, 246, 0.3); }
+}
+
 .drag-drop-content {
   display: flex;
   flex-direction: column;
