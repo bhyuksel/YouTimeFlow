@@ -110,7 +110,7 @@ pub fn run() {
             start_tracking_thread(app.handle().clone(), usage_data, data_path);
 
             // Create Menu window dynamically
-            let mut menu_builder = tauri::WebviewWindowBuilder::new(
+            let menu_builder = tauri::WebviewWindowBuilder::new(
                 app,
                 "menu",
                 tauri::WebviewUrl::App("/?window=menu".into())
