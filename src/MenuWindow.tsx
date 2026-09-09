@@ -215,6 +215,22 @@ export default function MenuWindow() {
   
   const [isSoundManagerOpen, setIsSoundManagerOpen] = useState(false);
   const [soundSearchQuery, setSoundSearchQuery] = useState('');
+  
+  const [soundPickerTarget, setSoundPickerTarget] = useState<'work' | 'break' | null>(null);
+
+  const getSoundName = (id: string) => {
+    if (id === 'chime') return 'Çan (Chime)';
+    if (id === 'beep') return 'Bip (Beep)';
+    if (id === 'bell') return 'Zil (Soft Bell)';
+    
+    const predefined = PREDEFINED_SOUNDS.find(s => s.id === id);
+    if (predefined) return predefined.name;
+    
+    const library = soundLibrary.find(s => s.id === id);
+    if (library) return library.name;
+    
+    return 'Bilinmeyen Ses';
+  };
 
   const [timeLeft, setTimeLeft] = useState(workTimeSetting);
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -1019,60 +1035,24 @@ export default function MenuWindow() {
                       
                       <div className="setting-row">
                         <label>Çalışma Bitiş Sesi:</label>
-                        <select 
-                          value={workEndSoundId} 
-                          onChange={(e) => {
-                            setWorkEndSoundId(e.target.value);
-                            playAlarm(e.target.value);
-                          }}
+                        <button 
+                          className="sound-picker-btn"
+                          onClick={() => setSoundPickerTarget('work')}
                         >
-                          <optgroup label="Sistem Sesleri">
-                            <option value="chime">Çan (Chime)</option>
-                            <option value="beep">Bip (Beep)</option>
-                            <option value="bell">Zil (Soft Bell)</option>
-                          </optgroup>
-                          <optgroup label="Gömülü Sesler">
-                            {PREDEFINED_SOUNDS.map(sound => (
-                              <option key={sound.id} value={sound.id}>{sound.name}</option>
-                            ))}
-                          </optgroup>
-                          {soundLibrary.length > 0 && (
-                            <optgroup label="Yüklenen Sesler">
-                              {soundLibrary.map(sound => (
-                                <option key={sound.id} value={sound.id}>{sound.name}</option>
-                              ))}
-                            </optgroup>
-                          )}
-                        </select>
+                          <span className="sound-picker-name">{getSoundName(workEndSoundId)}</span>
+                          <span className="sound-picker-arrow">▼</span>
+                        </button>
                       </div>
 
                       <div className="setting-row">
                         <label>Mola Bitiş Sesi:</label>
-                        <select 
-                          value={breakEndSoundId} 
-                          onChange={(e) => {
-                            setBreakEndSoundId(e.target.value);
-                            playAlarm(e.target.value);
-                          }}
+                        <button 
+                          className="sound-picker-btn"
+                          onClick={() => setSoundPickerTarget('break')}
                         >
-                          <optgroup label="Sistem Sesleri">
-                            <option value="chime">Çan (Chime)</option>
-                            <option value="beep">Bip (Beep)</option>
-                            <option value="bell">Zil (Soft Bell)</option>
-                          </optgroup>
-                          <optgroup label="Gömülü Sesler">
-                            {PREDEFINED_SOUNDS.map(sound => (
-                              <option key={sound.id} value={sound.id}>{sound.name}</option>
-                            ))}
-                          </optgroup>
-                          {soundLibrary.length > 0 && (
-                            <optgroup label="Yüklenen Sesler">
-                              {soundLibrary.map(sound => (
-                                <option key={sound.id} value={sound.id}>{sound.name}</option>
-                              ))}
-                            </optgroup>
-                          )}
-                        </select>
+                          <span className="sound-picker-name">{getSoundName(breakEndSoundId)}</span>
+                          <span className="sound-picker-arrow">▼</span>
+                        </button>
                       </div>
 
                       <label 
@@ -1155,6 +1135,78 @@ export default function MenuWindow() {
               )}
             </div>
           </div>
+      {soundPickerTarget && (
+        <div className="sound-manager-overlay" onClick={() => setSoundPickerTarget(null)}>
+          <div className="sound-manager-modal" onClick={e => e.stopPropagation()}>
+            <div className="sound-manager-header">
+              <h3>{soundPickerTarget === 'work' ? 'Çalışma Bitiş Sesi' : 'Mola Bitiş Sesi'} Seç</h3>
+              <button className="close-btn" onClick={() => setSoundPickerTarget(null)}>✕</button>
+            </div>
+            
+            <div className="sound-manager-list sound-picker-list">
+              <div className="sound-category-title">Sistem Sesleri</div>
+              {[
+                { id: 'chime', name: 'Çan (Chime)' },
+                { id: 'beep', name: 'Bip (Beep)' },
+                { id: 'bell', name: 'Zil (Soft Bell)' }
+              ].map(sound => (
+                <div 
+                  key={sound.id} 
+                  className={`sound-list-item ${(soundPickerTarget === 'work' ? workEndSoundId : breakEndSoundId) === sound.id ? 'selected' : ''}`}
+                  onClick={() => {
+                    if (soundPickerTarget === 'work') setWorkEndSoundId(sound.id);
+                    else setBreakEndSoundId(sound.id);
+                    playAlarm(sound.id);
+                    setSoundPickerTarget(null);
+                  }}
+                >
+                  <span className="sound-name">{sound.name}</span>
+                  {(soundPickerTarget === 'work' ? workEndSoundId : breakEndSoundId) === sound.id && <span className="check-icon">✓</span>}
+                </div>
+              ))}
+
+              <div className="sound-category-title">Gömülü Sesler</div>
+              {PREDEFINED_SOUNDS.map(sound => (
+                <div 
+                  key={sound.id} 
+                  className={`sound-list-item ${(soundPickerTarget === 'work' ? workEndSoundId : breakEndSoundId) === sound.id ? 'selected' : ''}`}
+                  onClick={() => {
+                    if (soundPickerTarget === 'work') setWorkEndSoundId(sound.id);
+                    else setBreakEndSoundId(sound.id);
+                    playAlarm(sound.id);
+                    setSoundPickerTarget(null);
+                  }}
+                >
+                  <span className="sound-name">{sound.name}</span>
+                  {(soundPickerTarget === 'work' ? workEndSoundId : breakEndSoundId) === sound.id && <span className="check-icon">✓</span>}
+                </div>
+              ))}
+
+              {soundLibrary.length > 0 && (
+                <>
+                  <div className="sound-category-title">Yüklenen Sesler</div>
+                  {soundLibrary.map(sound => (
+                    <div 
+                      key={sound.id} 
+                      className={`sound-list-item ${(soundPickerTarget === 'work' ? workEndSoundId : breakEndSoundId) === sound.id ? 'selected' : ''}`}
+                      onClick={() => {
+                        if (soundPickerTarget === 'work') setWorkEndSoundId(sound.id);
+                        else setBreakEndSoundId(sound.id);
+                        playAlarm(sound.id);
+                        setSoundPickerTarget(null);
+                      }}
+                    >
+                      <span className="sound-name" title={sound.name}>{sound.name}</span>
+                      {(soundPickerTarget === 'work' ? workEndSoundId : breakEndSoundId) === sound.id && <span className="check-icon">✓</span>}
+                    </div>
+                  ))}
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
       {isSoundManagerOpen && (
         <div className="sound-manager-overlay" onClick={() => setIsSoundManagerOpen(false)}>
           <div className="sound-manager-modal" onClick={e => e.stopPropagation()}>

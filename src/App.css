@@ -1550,6 +1550,74 @@ button:active {
   border-color: rgba(255, 255, 255, 0.2);
 }
 
+/* Custom Sound Picker Dropdown Button */
+.sound-picker-btn {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: white;
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 0.9rem;
+  width: 220px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.sound-picker-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.sound-picker-name {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sound-picker-arrow {
+  font-size: 0.7rem;
+  opacity: 0.6;
+}
+
+/* Custom Sound Picker Modal specific styles */
+.sound-picker-list {
+  padding-bottom: 20px;
+}
+
+.sound-category-title {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.5);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin: 15px 0 5px 5px;
+}
+
+.sound-list-item {
+  cursor: pointer;
+  border: 1px solid transparent;
+}
+
+.sound-list-item:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.sound-list-item.selected {
+  background: rgba(59, 130, 246, 0.15);
+  border-color: rgba(59, 130, 246, 0.3);
+  color: var(--primary, #3b82f6);
+}
+
+.check-icon {
+  color: var(--primary, #3b82f6);
+  font-weight: bold;
+  font-size: 1.1rem;
+}
+
 /* Sound Manager Modal */
 .sound-manager-overlay {
   position: absolute;
