@@ -164,9 +164,18 @@ export default function MenuWindow() {
   const [mode, setMode] = useState<TimerMode>("work");
   const [isRunning, setIsRunning] = useState(false);
   const [appVersion, setAppVersion] = useState<string>("");
+  const [showUpdateSuccess, setShowUpdateSuccess] = useState<boolean>(false);
 
   useEffect(() => {
-    getVersion().then(ver => setAppVersion(ver)).catch(console.error);
+    getVersion().then(ver => {
+      setAppVersion(ver);
+      const lastVersion = localStorage.getItem("lastVersion");
+      if (lastVersion && lastVersion !== ver) {
+        setShowUpdateSuccess(true);
+        setTimeout(() => setShowUpdateSuccess(false), 5000);
+      }
+      localStorage.setItem("lastVersion", ver);
+    }).catch(console.error);
   }, []);
   
   const [editingPresetId, setEditingPresetId] = useState<string | null>(null);
@@ -862,8 +871,11 @@ export default function MenuWindow() {
                   <span className="brand-letter f">F</span><span className="brand-rest">low</span>
                 </div>
                 {appVersion && (
-                  <div className="app-version-badge" style={{ fontSize: '0.65rem', opacity: 0.5, textAlign: 'center', marginTop: '-15px', marginBottom: '15px' }}>
+                  <div className="app-version-badge" style={{ fontSize: '0.65rem', opacity: 0.6, textAlign: 'center', marginTop: '-15px', marginBottom: '15px' }}>
                     v{appVersion}
+                    {showUpdateSuccess && (
+                      <div style={{fontSize: '0.6rem', color: '#00ff88', marginTop: '4px', opacity: 1, textShadow: '0 0 5px rgba(0,255,136,0.5)'}}>🎉 Güncellendi!</div>
+                    )}
                   </div>
                 )}
               </div>
