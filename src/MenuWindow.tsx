@@ -517,11 +517,13 @@ export default function MenuWindow() {
   };
 
   useEffect(() => {
-    let unlisten: (() => void) | undefined;
+    let unlistenPromise: Promise<() => void> | null = null;
+    let isCancelled = false;
+
     const setupNativeDragDrop = async () => {
       try {
         const { getCurrentWebview } = await import('@tauri-apps/api/webview');
-        unlisten = await getCurrentWebview().onDragDropEvent(async (event) => {
+        unlistenPromise = getCurrentWebview().onDragDropEvent(async (event) => {
           addDebugLog(`[Native] Event type: ${event.payload.type}`);
           
           if (event.payload.type === 'over') {
@@ -534,14 +536,16 @@ export default function MenuWindow() {
             addDebugLog(`[Native] Drop paths: ${JSON.stringify(paths)}`);
             if (!paths || paths.length === 0) return;
             
+            const currentLibrary = await getAllSoundsInfo();
+            
             for (let i = 0; i < paths.length; i++) {
               const path = paths[i];
               const name = path.split(/[/\\]/).pop() || 'Unknown';
               const ext = name.split('.').pop()?.toLowerCase();
               addDebugLog(`[Native] File: ${name}, Ext: ${ext}`);
               if (ext === 'mp3' || ext === 'wav' || ext === 'ogg' || ext === 'aac' || ext === 'm4a' || ext === 'flac' || ext === 'webm' || ext === 'mpeg' || ext === 'mpg' || ext === 'mp4') {
-                if (soundLibrary.some(s => s.name === name)) {
-                  console.warn(`File ${name} is already in the library.`);
+                if (currentLibrary.some(s => s.name === name)) {
+                  addDebugLog(`[Native] Already exists: ${name}`);
                   continue;
                 }
                 
@@ -582,6 +586,9 @@ export default function MenuWindow() {
             setSoundLibrary(updatedLibrary);
           }
         });
+
+        const unlisten = await unlistenPromise;
+        if (isCancelled) unlisten();
       } catch (err: any) {
         addDebugLog(`[Native] Setup failed: ${err.message || err}`);
         console.warn("Native drag drop setup failed:", err);
@@ -589,9 +596,12 @@ export default function MenuWindow() {
     };
     setupNativeDragDrop();
     return () => {
-      if (unlisten) unlisten();
+      isCancelled = true;
+      if (unlistenPromise) {
+        unlistenPromise.then(unlisten => unlisten());
+      }
     };
-  }, [soundLibrary]);
+  }, []);
 
   const handleAudioDrop = async (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
