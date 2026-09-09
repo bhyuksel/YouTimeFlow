@@ -1036,6 +1036,7 @@ export default function MenuWindow() {
                       <div className="setting-row">
                         <label>Çalışma Bitiş Sesi:</label>
                         <button 
+                          type="button"
                           className="sound-picker-btn"
                           onClick={() => setSoundPickerTarget('work')}
                         >
@@ -1047,6 +1048,7 @@ export default function MenuWindow() {
                       <div className="setting-row">
                         <label>Mola Bitiş Sesi:</label>
                         <button 
+                          type="button"
                           className="sound-picker-btn"
                           onClick={() => setSoundPickerTarget('break')}
                         >
