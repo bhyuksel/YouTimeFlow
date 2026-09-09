@@ -526,7 +526,7 @@ export default function MenuWindow() {
               const path = paths[i];
               const name = path.split(/[/\\]/).pop() || 'Unknown';
               const ext = name.split('.').pop()?.toLowerCase();
-              if (ext === 'mp3' || ext === 'wav' || ext === 'ogg' || ext === 'aac' || ext === 'm4a') {
+              if (ext === 'mp3' || ext === 'wav' || ext === 'ogg' || ext === 'aac' || ext === 'm4a' || ext === 'flac' || ext === 'webm' || ext === 'mpeg' || ext === 'mpg' || ext === 'mp4') {
                 if (soundLibrary.some(s => s.name === name)) {
                   console.warn(`File ${name} is already in the library.`);
                   continue;
@@ -539,7 +539,9 @@ export default function MenuWindow() {
                   if (ext === 'wav') mime = 'audio/wav';
                   else if (ext === 'ogg') mime = 'audio/ogg';
                   else if (ext === 'aac') mime = 'audio/aac';
-                  else if (ext === 'm4a') mime = 'audio/mp4';
+                  else if (ext === 'm4a' || ext === 'mp4') mime = 'audio/mp4';
+                  else if (ext === 'flac') mime = 'audio/flac';
+                  else if (ext === 'webm') mime = 'audio/webm';
 
                   await new Promise<void>((resolve) => {
                     const blob = new Blob([bytes], { type: mime });
@@ -577,34 +579,85 @@ export default function MenuWindow() {
     e.preventDefault();
     e.stopPropagation();
     
-    const files = e.dataTransfer.files;
-    if (!files || files.length === 0) return;
-    
-    for (let i = 0; i < files.length; i++) {
-      const file = files[i];
-      if (file && isAudioFile(file)) {
-        if (soundLibrary.some(s => s.name === file.name)) {
-          console.warn(`File ${file.name} is already in the library.`);
-          continue;
-        }
+    let processed = false;
 
-        await new Promise<void>((resolve) => {
-          const reader = new FileReader();
-          reader.onload = async (event) => {
-            const base64 = event.target?.result as string;
-            if (base64) {
-              const newId = Date.now().toString() + "-" + i;
-              await saveSound(newId, file.name, base64);
+    const files = e.dataTransfer.files;
+    if (files && files.length > 0) {
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        if (file && isAudioFile(file)) {
+          if (soundLibrary.some(s => s.name === file.name)) {
+            console.warn(`File ${file.name} is already in the library.`);
+            continue;
+          }
+
+          await new Promise<void>((resolve) => {
+            const reader = new FileReader();
+            reader.onload = async (event) => {
+              const base64 = event.target?.result as string;
+              if (base64) {
+                const newId = Date.now().toString() + "-" + i;
+                await saveSound(newId, file.name, base64);
+                processed = true;
+              }
+              resolve();
+            };
+            reader.readAsDataURL(file);
+          });
+        }
+      }
+    } else {
+      // Fallback for Linux WebKitGTK where e.dataTransfer.files might be empty
+      // but the file paths are provided in text/uri-list
+      const uriList = e.dataTransfer.getData('text/uri-list');
+      if (uriList) {
+        const paths = uriList.split('\n').filter(line => line.startsWith('file://')).map(line => decodeURIComponent(line.replace('file://', '').trim()));
+        for (let i = 0; i < paths.length; i++) {
+          const path = paths[i];
+          const name = path.split(/[/\\]/).pop() || 'Unknown';
+          const ext = name.split('.').pop()?.toLowerCase();
+          
+          if (ext && ['mp3', 'wav', 'ogg', 'aac', 'm4a', 'flac', 'webm', 'mpeg', 'mpg', 'mp4'].includes(ext)) {
+            if (soundLibrary.some(s => s.name === name)) continue;
+            
+            try {
+              const { readFile } = await import('@tauri-apps/plugin-fs');
+              const bytes = await readFile(path);
+              
+              let mime = 'audio/mpeg';
+              if (ext === 'wav') mime = 'audio/wav';
+              else if (ext === 'ogg') mime = 'audio/ogg';
+              else if (ext === 'aac') mime = 'audio/aac';
+              else if (ext === 'm4a' || ext === 'mp4') mime = 'audio/mp4';
+              else if (ext === 'flac') mime = 'audio/flac';
+              else if (ext === 'webm') mime = 'audio/webm';
+
+              await new Promise<void>((resolve) => {
+                const blob = new Blob([bytes], { type: mime });
+                const reader = new FileReader();
+                reader.onload = async (ev) => {
+                  const dataUrl = ev.target?.result as string;
+                  if (dataUrl) {
+                    const newId = Date.now().toString() + "-" + i + "-uri";
+                    await saveSound(newId, name, dataUrl);
+                    processed = true;
+                  }
+                  resolve();
+                };
+                reader.readAsDataURL(blob);
+              });
+            } catch (err) {
+              console.error("Failed to read dropped file natively via uri-list:", err);
             }
-            resolve();
-          };
-          reader.readAsDataURL(file);
-        });
+          }
+        }
       }
     }
     
-    const updatedLibrary = await getAllSoundsInfo();
-    setSoundLibrary(updatedLibrary);
+    if (processed) {
+      const updatedLibrary = await getAllSoundsInfo();
+      setSoundLibrary(updatedLibrary);
+    }
   };
 
   const handleDeleteSound = async (id: string) => {
