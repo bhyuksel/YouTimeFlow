@@ -124,9 +124,19 @@ export default function MenuWindow() {
 
     window.addEventListener('mousemove', handleMouseMove);
     window.addEventListener('mouseup', handleMouseUp);
+    
+    // Prevent default drag and drop behavior globally to stop the browser from opening dropped files
+    const preventDefaultDragDrop = (e: Event) => {
+      e.preventDefault();
+    };
+    window.addEventListener('dragover', preventDefaultDragDrop);
+    window.addEventListener('drop', preventDefaultDragDrop);
+
     return () => {
       window.removeEventListener('mousemove', handleMouseMove);
       window.removeEventListener('mouseup', handleMouseUp);
+      window.removeEventListener('dragover', preventDefaultDragDrop);
+      window.removeEventListener('drop', preventDefaultDragDrop);
     };
   }, []);
 

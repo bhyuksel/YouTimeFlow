@@ -159,8 +159,17 @@ function App() {
     // Load sound library on startup
     getAllSoundsInfo().then(info => setSoundLibrary(info)).catch(console.error);
 
+    // Prevent default drag and drop behavior globally to stop the browser from opening dropped files
+    const preventDefaultDragDrop = (e: Event) => {
+      e.preventDefault();
+    };
+    window.addEventListener('dragover', preventDefaultDragDrop);
+    window.addEventListener('drop', preventDefaultDragDrop);
+
     return () => {
       if (hoverTimeoutRef.current) clearTimeout(hoverTimeoutRef.current);
+      window.removeEventListener('dragover', preventDefaultDragDrop);
+      window.removeEventListener('drop', preventDefaultDragDrop);
     };
   }, []);
 
