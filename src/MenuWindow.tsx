@@ -3,6 +3,8 @@ import { useState, useEffect, useRef } from "react";
 import { getCurrentWindow, currentMonitor } from "@tauri-apps/api/window";
 import { LogicalSize, PhysicalPosition } from "@tauri-apps/api/dpi";
 import { invoke } from "@tauri-apps/api/core";
+import { getCurrentWebview } from "@tauri-apps/api/webview";
+import { readFile } from "@tauri-apps/plugin-fs";
 import { Analytics } from "./Analytics";
 import { Tasks, Task } from "./Tasks";
 import { saveSound, getAllSoundsInfo, getSoundData, deleteSound, AudioItemInfo } from "./utils/audioDB";
@@ -495,6 +497,71 @@ export default function MenuWindow() {
     const updatedLibrary = await getAllSoundsInfo();
     setSoundLibrary(updatedLibrary);
   };
+
+  useEffect(() => {
+    let unlisten: (() => void) | undefined;
+    const setupNativeDragDrop = async () => {
+      try {
+        unlisten = await getCurrentWebview().onDragDropEvent(async (event) => {
+          if (event.payload.type === 'over') {
+            setIsDragActive(true);
+          } else if (event.payload.type === 'leave') {
+            setIsDragActive(false);
+          } else if (event.payload.type === 'drop') {
+            setIsDragActive(false);
+            const paths = event.payload.paths;
+            if (!paths || paths.length === 0) return;
+            
+            for (let i = 0; i < paths.length; i++) {
+              const path = paths[i];
+              const name = path.split(/[/\\]/).pop() || 'Unknown';
+              const ext = name.split('.').pop()?.toLowerCase();
+              if (ext === 'mp3' || ext === 'wav' || ext === 'ogg' || ext === 'aac' || ext === 'm4a') {
+                if (soundLibrary.some(s => s.name === name)) {
+                  console.warn(`File ${name} is already in the library.`);
+                  continue;
+                }
+                
+                try {
+                  const bytes = await readFile(path);
+                  
+                  let mime = 'audio/mpeg';
+                  if (ext === 'wav') mime = 'audio/wav';
+                  else if (ext === 'ogg') mime = 'audio/ogg';
+                  else if (ext === 'aac') mime = 'audio/aac';
+                  else if (ext === 'm4a') mime = 'audio/mp4';
+
+                  await new Promise<void>((resolve) => {
+                    const blob = new Blob([bytes], { type: mime });
+                    const reader = new FileReader();
+                    reader.onload = async (ev) => {
+                      const dataUrl = ev.target?.result as string;
+                      if (dataUrl) {
+                        const newId = Date.now().toString() + "-" + i;
+                        await saveSound(newId, name, dataUrl);
+                      }
+                      resolve();
+                    };
+                    reader.readAsDataURL(blob);
+                  });
+                } catch (err) {
+                  console.error("Failed to read dropped file natively:", err);
+                }
+              }
+            }
+            const updatedLibrary = await getAllSoundsInfo();
+            setSoundLibrary(updatedLibrary);
+          }
+        });
+      } catch (err) {
+        console.warn("Native drag drop setup failed:", err);
+      }
+    };
+    setupNativeDragDrop();
+    return () => {
+      if (unlisten) unlisten();
+    };
+  }, [soundLibrary]);
 
   const handleAudioDrop = async (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();

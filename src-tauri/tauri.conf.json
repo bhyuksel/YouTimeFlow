@@ -34,7 +34,7 @@
         "shadow": false,
         "alwaysOnTop": false,
         "visible": false,
-        "dragDropEnabled": false
+        "dragDropEnabled": true
       }
     ],
     "security": {
