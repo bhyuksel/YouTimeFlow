@@ -123,12 +123,6 @@ pub fn run() {
             .shadow(false)
             .visible(false);
 
-            #[cfg(target_os = "linux")]
-            {
-                // Disable native drag drop handler on Linux so HTML5 drag drop can take over
-                menu_builder = menu_builder.disable_drag_drop_handler();
-            }
-
             menu_builder.build().expect("failed to build menu window");
 
             let quit_i = MenuItem::with_id(app, "quit", "Çıkış", true, None::<&str>)?;
