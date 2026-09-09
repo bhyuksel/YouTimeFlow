@@ -21,20 +21,6 @@
         "shadow": false,
         "alwaysOnTop": true,
         "dragDropEnabled": false
-      },
-      {
-        "label": "menu",
-        "title": "Menü",
-        "url": "/?window=menu",
-        "width": 750,
-        "height": 600,
-        "center": true,
-        "transparent": true,
-        "decorations": false,
-        "shadow": false,
-        "alwaysOnTop": false,
-        "visible": false,
-        "dragDropEnabled": true
       }
     ],
     "security": {

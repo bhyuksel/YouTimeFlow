@@ -109,6 +109,28 @@ pub fn run() {
             
             start_tracking_thread(app.handle().clone(), usage_data, data_path);
 
+            // Create Menu window dynamically
+            let mut menu_builder = tauri::WebviewWindowBuilder::new(
+                app,
+                "menu",
+                tauri::WebviewUrl::App("/?window=menu".into())
+            )
+            .title("Menü")
+            .inner_size(750.0, 600.0)
+            .center()
+            .transparent(true)
+            .decorations(false)
+            .shadow(false)
+            .visible(false);
+
+            #[cfg(target_os = "linux")]
+            {
+                // Disable native drag drop handler on Linux so HTML5 drag drop can take over
+                menu_builder = menu_builder.disable_drag_drop_handler();
+            }
+
+            menu_builder.build().expect("failed to build menu window");
+
             let quit_i = MenuItem::with_id(app, "quit", "Çıkış", true, None::<&str>)?;
             let show_i = MenuItem::with_id(app, "show", "Göster", true, None::<&str>)?;
             let menu = Menu::with_items(app, &[&show_i, &quit_i])?;
